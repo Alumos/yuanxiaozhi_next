@@ -1,0 +1,11 @@
+{
+  "max_concurrency": 10,
+  "effort_style": "openai",
+  "effort": { "jisuan.recommend": "low", "shuchu.route_draw": "off" },
+  "use_llm": true,
+  "max_attempts": 3,
+  "lowfx": false,
+  "show_draft": true,
+  "anim_scale": 1,
+  "lan_ip": ""
+}

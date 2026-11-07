@@ -1,0 +1,7 @@
+.map-svg { width: 100%; height: auto; display: block; background: #fffdf8; }
+.map-svg.anim .route-draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: route-draw 1.8s cubic-bezier(.4,0,.2,1) forwards; }
+.map-svg.anim .route-mark { opacity: 0; animation: route-pop .4s cubic-bezier(.2,.8,.2,1) forwards; animation-delay: 1.2s; }
+@keyframes route-draw { to { stroke-dashoffset: 0; } }
+@keyframes route-pop { from { opacity: 0; } to { opacity: 1; } }
+html.lowfx .map-svg.anim .route-draw { stroke-dashoffset: 0; animation: none; }
+html.lowfx .map-svg.anim .route-mark { opacity: 1; animation: none; }

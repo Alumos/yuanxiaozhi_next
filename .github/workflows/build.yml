@@ -1,0 +1,56 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: 前端构建 + Go 校验
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: app } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: app/web/package-lock.json }
+      - uses: actions/setup-go@v5
+        with: { go-version: '1.25', cache-dependency-path: app/server/go.mod }
+      - run: cd web && npm ci --no-audit --no-fund && npx vue-tsc --noEmit && npx vite build
+      - run: cd server && go vet ./... && go build -o ../bin/yxz ./cmd/yxz
+      - name: 内容校验（yxz check）
+        run: ./bin/yxz check -content content -env /nonexistent
+      - name: 启动冒烟测试（模拟模式）
+        run: |
+          YXZ_MODE=mock YXZ_DATA=$RUNNER_TEMP/data ./bin/yxz serve -content content -env /nonexistent &
+          for i in $(seq 1 20); do curl -fs localhost:8080/api/common/health && break; sleep 0.5; done
+          curl -fs localhost:8080/jisuan/ | grep -q '<div id="app">'
+          curl -fs localhost:8080/shuchu/ | grep -q '<div id="app">'
+          curl -fs localhost:8080/api/jisuan/meta | grep -q '"books":301'
+      - name: 单文件程序（Windows / macOS / Linux）
+        run: |
+          cd server
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o ../dist/yxz-windows-amd64.exe ./cmd/yxz
+          GOOS=darwin  GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o ../dist/yxz-mac-arm64 ./cmd/yxz
+          GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o ../dist/yxz-mac-intel ./cmd/yxz
+          GOOS=linux   GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o ../dist/yxz-linux-amd64 ./cmd/yxz
+          cd .. && cp -r content .env.example README.md dist/
+      - uses: actions/upload-artifact@v4
+        with: { name: yxz-单文件程序, path: app/dist }
+
+  docker:
+    name: Docker 镜像（amd64 + arm64）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: app
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: yxz-next:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

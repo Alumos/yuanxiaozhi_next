@@ -1,0 +1,7 @@
+.env
+data/
+web/node_modules/
+web/dist/
+server/internal/core/dist/*
+!server/internal/core/dist/.keep
+bin/

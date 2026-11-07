@@ -1,0 +1,9 @@
+.DS_Store
+.env
+app/data/
+app/bin/
+app/web/node_modules/
+app/web/dist/
+app/server/internal/core/dist/*
+!app/server/internal/core/dist/.keep
+__pycache__/

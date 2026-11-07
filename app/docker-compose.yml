@@ -1,0 +1,13 @@
+services:
+  yxz:
+    build: .
+    image: yxz-next:latest
+    ports: ["8080:8080"]
+    env_file: .env
+    environment:
+      YXZ_DATA: /data
+    volumes:
+      - ./data:/data
+      # 课前要改书库或地图时，取消下一行注释，用本机目录覆盖内置内容
+      # - ./content:/app/content:ro
+    restart: unless-stopped

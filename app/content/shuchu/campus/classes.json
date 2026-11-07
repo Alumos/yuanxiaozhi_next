@@ -1,0 +1,56 @@
+[
+ {
+  "group": 1,
+  "class": "六（1）",
+  "building": "清源楼",
+  "floor": 3,
+  "position": "西头",
+  "people": 44,
+  "start": "C1"
+ },
+ {
+  "group": 2,
+  "class": "六（2）",
+  "building": "清源楼",
+  "floor": 3,
+  "position": "中间",
+  "people": 45,
+  "start": "C2"
+ },
+ {
+  "group": 3,
+  "class": "六（3）",
+  "building": "清源楼",
+  "floor": 3,
+  "position": "东头",
+  "people": 45,
+  "start": "C3"
+ },
+ {
+  "group": 4,
+  "class": "六（4）",
+  "building": "本源楼",
+  "floor": 4,
+  "position": "东头",
+  "people": 43,
+  "start": "C4"
+ },
+ {
+  "group": 5,
+  "class": "六（5）",
+  "building": "行远楼",
+  "floor": 3,
+  "position": "东段东头",
+  "people": 46,
+  "start": "C5"
+ },
+ {
+  "group": 6,
+  "class": "六（6）",
+  "building": "行远楼",
+  "floor": 3,
+  "position": "西段中间",
+  "people": 44,
+  "start": "C6"
+ }
+]
