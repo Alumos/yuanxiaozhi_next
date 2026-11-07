@@ -1,7 +1,8 @@
 services:
   yxz:
+    # 默认直接拉取 GitHub 上自动构建好的镜像；要用本地代码构建时执行 docker compose up -d --build
+    image: ghcr.io/alumos/yuanxiaozhi_next:latest
     build: .
-    image: yxz-next:latest
     ports: ["8080:8080"]
     env_file: .env
     environment:

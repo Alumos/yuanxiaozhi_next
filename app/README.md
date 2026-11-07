@@ -9,7 +9,14 @@ cp .env.example .env      # 填模型网关、密钥、教师口令
 make run                  # 构建前端 + Go 单文件程序，并启动 http://localhost:8080
 ```
 
-或者用 Docker：`docker compose up -d`。不能装 Docker 时，`make dist` 生成 Windows / macOS 单文件程序。
+或者用 Docker（镜像由 GitHub 自动构建，支持普通电脑和苹果芯片）：
+
+```bash
+docker pull ghcr.io/alumos/yuanxiaozhi_next:latest
+docker compose up -d      # 需要当前目录下有 docker-compose.yml 和填好的 .env
+```
+
+不能装 Docker 时，`make dist` 生成 Windows / macOS 单文件程序。
 
 | 页面 | 地址 |
 |---|---|
