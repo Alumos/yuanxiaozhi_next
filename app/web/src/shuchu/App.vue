@@ -235,6 +235,7 @@ const thumb = computed(() => (stage.value === 'work' ? campusThumb() : ''))
 <style scoped>
 .wk { height: calc(100vh - 64px); height: calc(100dvh - 64px); display: flex; }
 .task { width: 55%; overflow: auto; -webkit-overflow-scrolling: touch; padding: 16px 18px 30px; display: flex; flex-direction: column; gap: 12px; }
+.task > * { flex-shrink: 0; }
 .cls { padding: 16px 20px; border-left: 8px solid var(--accent); }
 .ct { display: flex; align-items: center; gap: 12px; }
 .lbl { background: var(--accent); color: #fff; border-radius: 8px; padding: 2px 10px; font-size: 16px; font-weight: 700; }
@@ -255,7 +256,7 @@ h3 small { font-size: 16px; font-weight: 500; }
 .tt b { font-size: 19px; }
 .tt small { font-size: 15px; color: var(--ink-2); line-height: 1.45; }
 .note { width: calc(100% - 16px); margin: 0 8px 8px; min-height: 46px; border-radius: 10px; border: 2px solid var(--line); padding: 0 12px; font-size: 17px; }
-textarea { width: 100%; border-radius: 14px; border: 2px solid var(--line); padding: 12px 14px; font-size: 20px; resize: none; outline: none; background: #fff; }
+textarea { width: 100%; min-height: 112px; border-radius: 14px; border: 2px solid var(--line); padding: 12px 14px; font-size: 20px; line-height: 1.5; resize: none; outline: none; background: #fff; }
 textarea:focus, .note:focus { border-color: var(--accent); outline: none; }
 .chips { display: flex; flex-direction: column; gap: 8px; }
 .cg { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }

@@ -1,0 +1,35 @@
+# 元小智三环节系统 · 1Panel 编排
+# 用法：1Panel → 容器 → 编排 → 创建编排 → 选“编辑”，把本文件整段粘进去，改好下面 3 个“改这里”，确认即可。
+# 访问：http://服务器IP:38080   （云服务器记得在安全组 / 1Panel 防火墙放行 38080）
+# 更新：在编排列表里点“重建”（会拉取最新的 latest 镜像），课堂数据保存在卷 yxz-data 里，不会丢。
+
+services:
+  yxz:
+    image: ghcr.io/alumos/yuanxiaozhi_next:latest
+    container_name: yuanxiaozhi
+    restart: unless-stopped
+    pull_policy: always
+    ports:
+      - "38080:8080"            # 左边是对外的高位端口，想换端口只改左边
+    environment:
+      YXZ_PORT: "8080"
+      YXZ_DATA: /data
+      YXZ_MODE: live            # live 实时 / replay 回放 / mock 模拟
+      YXZ_TEACHER_PIN: "2026"   # 改这里：教师口令（打开大屏和 /admin 要用）
+      YXZ_TEXT_BASE: https://newapi.pipiy.cn/v1
+      YXZ_TEXT_KEY: "sk-在这里填你的密钥"   # 改这里：模型网关密钥
+      YXZ_TEXT_MODEL: "YM ·DeepSeek-V4.1"
+      TZ: Asia/Shanghai
+    volumes:
+      - yxz-data:/data          # 状态快照、日志、回放录音、学生收到的路线图
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/api/common/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+volumes:
+  yxz-data:

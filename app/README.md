@@ -16,6 +16,8 @@ docker pull ghcr.io/alumos/yuanxiaozhi_next:latest
 docker compose up -d      # 需要当前目录下有 docker-compose.yml 和填好的 .env
 ```
 
+在 1Panel 上部署：直接用 [deploy/1panel/docker-compose.yml](deploy/1panel/docker-compose.yml)（端口 38080，粘进 1Panel 的“编排”即可）。如果前面套了 1Panel 的反向代理网站，记得在代理配置里关掉缓冲（`proxy_buffering off;`），否则实时推送会卡住。
+
 不能装 Docker 时，`make dist` 生成 Windows / macOS 单文件程序。
 
 | 页面 | 地址 |
