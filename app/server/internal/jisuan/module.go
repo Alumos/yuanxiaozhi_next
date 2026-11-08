@@ -822,7 +822,7 @@ func (m *Module) screenState(w http.ResponseWriter, r *http.Request) {
 	seats := []map[string]any{}
 	taste := map[string]int{}
 	recCount := map[string]int{}
-	var interests []int
+	interests := []int{}
 	stars := [6]int{}
 	picks, ops := 0, int64(0)
 	computeMs := 0.0
@@ -866,7 +866,7 @@ func (m *Module) screenState(w http.ResponseWriter, r *http.Request) {
 		ID string `json:"id"`
 		N  int    `json:"n"`
 	}
-	var top []kv
+	top := []kv{}
 	for id, n := range recCount {
 		top = append(top, kv{id, n})
 	}

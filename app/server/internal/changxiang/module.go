@@ -166,7 +166,7 @@ func (m *Module) Routes(mux *http.ServeMux) {
 	})
 	mux.HandleFunc("GET /api/changxiang/screen/state", m.app.Teacher(func(w http.ResponseWriter, r *http.Request) {
 		m.mu.RLock()
-		all := append([]*Idea(nil), m.ideas...)
+		all := append([]*Idea{}, m.ideas...)
 		m.mu.RUnlock()
 		sort.SliceStable(all, func(i, j int) bool { return all[i].At.Before(all[j].At) })
 		seats := map[int]bool{}

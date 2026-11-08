@@ -14,7 +14,7 @@ const pop = reactive<Record<number, boolean>>({})
 const detail = ref<any>(null)
 const dv = ref(0)
 let off: (() => void) | null = null
-async function load() { Object.assign(S, await get('/api/shuru/screen/state')) }
+async function load() { const d = await get('/api/shuru/screen/state'); d.students = d.students || []; Object.assign(S, d) }
 function upsert(d: any) {
   const i = S.students.findIndex((s: any) => s.seat === d.seat)
   if (i >= 0) S.students[i] = d; else S.students.push(d)
@@ -122,7 +122,7 @@ const short = (s: string) => (s || '').replace(/\n.*$/s, '').split('；').map((x
 .left { flex: 1; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .ctr { display: flex; gap: 46px; font-size: 28px; color: var(--ink-2); }
 .ctr b { font-size: 50px; color: var(--accent); margin: 0 6px; }
-.grid { flex: 1; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(6, 1fr); gap: 10px; min-height: 0; }
+.grid { flex: 1; display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(5, 1fr); gap: 10px; min-height: 0; }
 .cell { position: relative; border-radius: 16px; background: #ece8e0; color: #a1a8aa; text-align: left; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; overflow: hidden; transition: transform .3s var(--ease); }
 .cell.on { background: #fff; color: var(--ink); box-shadow: var(--shadow); }
 .cell.busy { box-shadow: 0 0 0 4px var(--accent); }

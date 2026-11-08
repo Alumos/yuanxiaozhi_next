@@ -240,11 +240,11 @@ section { position: absolute; left: 0; right: 0; top: 104px; bottom: 0; padding:
 .v0 canvas { width: 1760px; height: 620px; background: linear-gradient(#f2ebdf, #e9dfcf); border-radius: 18px; }
 .legend { display: flex; gap: 26px; flex-wrap: wrap; justify-content: center; font-size: 26px; }
 .legend i { display: inline-block; width: 22px; height: 22px; border-radius: 5px; margin-right: 8px; vertical-align: -3px; }
-.counters { display: flex; gap: 60px; font-size: 34px; margin-bottom: 20px; }
+.counters { display: flex; gap: 60px; font-size: 34px; margin-bottom: 12px; }
 .counters b { font-size: 64px; color: var(--accent); margin: 0 6px; }
 .counters .hot { color: #e2702c; }
 .v1b { display: flex; gap: 40px; }
-.grid { display: grid; grid-template-columns: repeat(6, 178px); grid-auto-rows: 126px; gap: 12px; }
+.grid { display: grid; grid-template-columns: repeat(6, 178px); grid-auto-rows: 136px; gap: 12px; }
 .cell { position: relative; border-radius: 18px; background: #ece8e0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #9aa4a6; }
 .cell.on { background: #fff; color: var(--ink); box-shadow: var(--shadow); }
 .cell.spin::before { content: ""; position: absolute; inset: -4px; border-radius: 20px; border: 4px solid transparent; border-top-color: var(--accent); border-right-color: var(--accent); animation: spin 1s linear infinite; }

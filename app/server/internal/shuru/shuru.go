@@ -546,7 +546,7 @@ func (m *Module) Routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/shuru/screen/state", m.app.Teacher(func(w http.ResponseWriter, r *http.Request) {
 		m.mu.RLock()
 		defer m.mu.RUnlock()
-		var list []map[string]any
+		list := []map[string]any{}
 		for _, s := range m.stus {
 			list = append(list, m.summary(s))
 		}
