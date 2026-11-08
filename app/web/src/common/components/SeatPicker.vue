@@ -47,11 +47,11 @@ async function pick(n: number, force = false) {
   </div>
 </template>
 <style scoped>
-.sp { max-width: 760px; margin: 0 auto; padding: 28px 20px; }
-.head { display: flex; gap: 16px; align-items: center; margin-bottom: 22px; }
+.sp { max-width: 880px; margin: 0 auto; padding: 18px 20px; }
+.head { display: flex; gap: 16px; align-items: center; margin-bottom: 16px; }
 h1 { font-size: var(--fs-title); }
-.grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
-.cell { aspect-ratio: 1.25; border-radius: 18px; background: #fff; box-shadow: var(--shadow); font-size: 38px; font-weight: 800; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; color: var(--ink); transition: transform var(--t-light); }
+.grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+.cell { aspect-ratio: 1.45; min-height: 64px; border-radius: 16px; background: #fff; box-shadow: var(--shadow); font-size: 34px; font-weight: 800; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; color: var(--ink); transition: transform var(--t-light); }
 .cell small { font-size: 15px; font-weight: 600; color: var(--muted); margin-top: 4px; }
 .cell:active { transform: scale(.94); background: var(--accent-soft); }
 .cell.taken { background: #ece8e0; color: #9aa4a6; box-shadow: none; }

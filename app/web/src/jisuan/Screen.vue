@@ -157,7 +157,7 @@ watch(view, (v) => { if (v === 'V0') requestAnimationFrame(() => {}) })
             <span v-if="seatMap[a.seat]?.attempt > 1" class="tries">第 {{ seatMap[a.seat].attempt }} 次</span>
             <span v-if="seatMap[a.seat]?.differ" class="diff">两次不一样</span>
             <div v-if="seatMap[a.seat]?.top" class="top">
-              <BookCover :id="seatMap[a.seat].top.id" :title="seatMap[a.seat].top.title" :cat="catOf(seatMap[a.seat].top)" :w="54" />
+              <BookCover :id="seatMap[a.seat].top.id" :title="seatMap[a.seat].top.title" :cat="catOf(seatMap[a.seat].top)" :w="44" />
               <small>{{ seatMap[a.seat].persona }}</small>
             </div>
             <div v-else class="pips"><i v-for="k in 5" :key="k" :class="{ lit: k <= (seatMap[a.seat]?.picked || 0) }" /></div>
@@ -244,21 +244,21 @@ section { position: absolute; left: 0; right: 0; top: 104px; bottom: 0; padding:
 .counters b { font-size: 64px; color: var(--accent); margin: 0 6px; }
 .counters .hot { color: #e2702c; }
 .v1b { display: flex; gap: 40px; }
-.grid { display: grid; grid-template-columns: repeat(5, 200px); grid-auto-rows: 150px; gap: 14px; }
+.grid { display: grid; grid-template-columns: repeat(6, 178px); grid-auto-rows: 126px; gap: 12px; }
 .cell { position: relative; border-radius: 18px; background: #ece8e0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #9aa4a6; }
 .cell.on { background: #fff; color: var(--ink); box-shadow: var(--shadow); }
 .cell.spin::before { content: ""; position: absolute; inset: -4px; border-radius: 20px; border: 4px solid transparent; border-top-color: var(--accent); border-right-color: var(--accent); animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .cell.done { background: var(--accent-soft); }
-.sn { position: absolute; left: 12px; top: 6px; font-size: 30px; }
-.tries { position: absolute; right: 10px; top: 8px; font-size: 20px; color: var(--accent); font-weight: 700; }
-.diff { position: absolute; right: 8px; bottom: 8px; font-size: 18px; background: var(--amber); color: #fff; border-radius: 8px; padding: 0 8px; }
-.pips { display: flex; gap: 8px; margin-top: 18px; }
-.pips i { width: 26px; height: 34px; border-radius: 5px; background: #ddd6ca; }
+.sn { position: absolute; left: 10px; top: 4px; font-size: 26px; }
+.tries { position: absolute; right: 8px; top: 6px; font-size: 17px; color: var(--accent); font-weight: 700; }
+.diff { position: absolute; right: 6px; bottom: 6px; font-size: 15px; background: var(--amber); color: #fff; border-radius: 8px; padding: 0 8px; }
+.pips { display: flex; gap: 6px; margin-top: 16px; }
+.pips i { width: 22px; height: 30px; border-radius: 5px; background: #ddd6ca; }
 .pips i.lit { background: var(--accent); }
-.top { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
-.top small { font-size: 22px; font-weight: 700; color: var(--accent); max-width: 110px; line-height: 1.2; }
-.stars { position: absolute; left: 12px; bottom: 6px; font-size: 20px; color: var(--amber); }
+.top { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+.top small { font-size: 19px; font-weight: 700; color: var(--accent); max-width: 100px; line-height: 1.2; }
+.stars { position: absolute; left: 10px; bottom: 4px; font-size: 18px; color: var(--amber); }
 .taste { flex: 1; }
 .taste h2 { font-size: 40px; margin-bottom: 16px; }
 .bubs { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; align-content: flex-start; }
