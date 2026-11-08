@@ -8,7 +8,7 @@ import LookAtScreen from '../common/components/LookAtScreen.vue'
 import RetryButton from '../common/components/RetryButton.vue'
 import Toasts from '../common/components/Toasts.vue'
 import Analysis from './Analysis.vue'
-import { ApiError, events, get, post, stream, token } from '../common/api'
+import { ApiError, events, get, post, streamResume, token } from '../common/api'
 import { ME, loadMe } from '../common/seat'
 import { toast } from '../common/toast'
 import { ICON } from '../common/icons'
@@ -106,7 +106,7 @@ async function choose(b: BookView) {
 // ---------------- 分析 ----------------
 function feedFrom(path: string, body: unknown) {
   const f = newFeed()
-  stream(path, body, (ev, d) => {
+  streamResume(path, body, (ev, d) => {
     if (ev === 'trace') f.trace = d
     else if (ev === 'thought') f.thoughts.push({ kind: d.kind, text: d.text })
     else if (ev === 'persona') f.persona = d
@@ -174,7 +174,7 @@ async function sendAgain() {
   try {
     await new Promise<void>((resolve, reject) => {
       let started = false
-      stream('/api/jisuan/again', { likes: lk, text: againText.value }, (ev, d) => {
+      streamResume('/api/jisuan/again', { likes: lk, text: againText.value }, (ev, d) => {
         if (!started) { started = true; againOpen.value = false; replaying.value = false; feedKey.value++; feed.value = f; resolve() }
         if (ev === 'trace') f.trace = d
         else if (ev === 'thought') f.thoughts.push({ kind: d.kind, text: d.text })

@@ -11,7 +11,7 @@ function fmt(v: number) {
 }
 watch(() => p.value, (to, from) => {
   cancelAnimationFrame(raf)
-  const a = from ?? 0, t0 = performance.now(), d = FX.low ? 1 : (p.ms ?? 900)
+  const a = from ?? 0, t0 = performance.now(), d = p.ms ?? 900
   const step = () => {
     const k = Math.min(1, (performance.now() - t0) / d)
     shown.value = a + (to - a) * (1 - Math.pow(1 - k, 3))

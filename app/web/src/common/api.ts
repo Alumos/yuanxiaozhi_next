@@ -58,6 +58,26 @@ export async function stream(path: string, body: unknown, on: (ev: string, data:
   }
 }
 
+/** 可续传的流：连接中途断开（旧平板常见 “Error in input stream”）就重新发起同一个请求。
+ *  服务器会让新请求接上同一个任务、从头重放，这里跳过已经收到的事件，界面不会重复。 */
+export async function streamResume(path: string, body: unknown, on: (ev: string, data: any) => void, tries = 5): Promise<void> {
+  let seen = 0
+  for (let k = 0; ; k++) {
+    let n = 0, finished = false
+    try {
+      await stream(path, body, (ev, d) => {
+        if (ev === 'done') finished = true
+        if (++n > seen) { seen = n; on(ev, d) }
+      })
+      if (finished || k >= tries) return
+    } catch (e) {
+      if (e instanceof ApiError) throw e
+      if (k >= tries) throw new ApiError(0, '网络断了一下，点“再试一次”', 'network')
+    }
+    await sleep(800 + k * 700)
+  }
+}
+
 /** Server push for a module (EventSource reconnects by itself and replays with Last-Event-ID). */
 export function events(mod: string, role: 'student' | 'screen', handlers: Record<string, (d: any) => void>, onOpen?: () => void): () => void {
   const url = `/events/${mod}?role=${role}&t=${encodeURIComponent(token())}`

@@ -154,8 +154,9 @@ func writeEvent(w http.ResponseWriter, e *Event) {
 type Stream struct {
 	w  http.ResponseWriter
 	fl http.Flusher
-	mu sync.Mutex
+	mu     sync.Mutex
 	closed bool
+	stop   chan struct{}
 }
 
 func NewStream(w http.ResponseWriter) *Stream {
@@ -164,11 +165,24 @@ func NewStream(w http.ResponseWriter) *Stream {
 	hd.Set("Cache-Control", "no-cache")
 	hd.Set("X-Accel-Buffering", "no")
 	fl, _ := w.(http.Flusher)
-	s := &Stream{w: w, fl: fl}
+	s := &Stream{w: w, fl: fl, stop: make(chan struct{})}
 	fmt.Fprint(w, ": open\n\n")
 	if fl != nil {
 		fl.Flush()
 	}
+	// 等模型的时候可能十几秒没有数据：定时发注释行，免得代理或旧 WebView 把连接当成断了
+	go func() {
+		t := time.NewTicker(8 * time.Second)
+		defer t.Stop()
+		for {
+			select {
+			case <-t.C:
+				s.Ping()
+			case <-s.stop:
+				return
+			}
+		}
+	}()
 	return s
 }
 
@@ -185,4 +199,25 @@ func (s *Stream) Send(name string, v any) {
 	}
 }
 
-func (s *Stream) Close() { s.mu.Lock(); s.closed = true; s.mu.Unlock() }
+// Ping writes an SSE comment so proxies and old WebViews don't drop an idle stream.
+func (s *Stream) Ping() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
+		return
+	}
+	fmt.Fprint(s.w, ": ping\n\n")
+	if s.fl != nil {
+		s.fl.Flush()
+	}
+}
+
+// Close must be called before the handler returns (callers defer it).
+func (s *Stream) Close() {
+	s.mu.Lock()
+	if !s.closed {
+		s.closed = true
+		close(s.stop)
+	}
+	s.mu.Unlock()
+}

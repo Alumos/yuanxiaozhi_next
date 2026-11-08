@@ -94,7 +94,7 @@ async function rewind() {
   for (let k = rounds.value.length - 1; k >= 0 && !aborted; k--) {
     S.round = k
     S.flyTags = []
-    await wait(FX.low ? 200 : 500)
+    await wait(500)
     const d = per[k]
     if (d) {
       const chips = d.deltas.slice(0, FX.low ? 3 : 6)
@@ -102,7 +102,7 @@ async function rewind() {
       await wait(450)
       S.bars = { ...d.bars }
     }
-    await wait(FX.low ? 400 : 700)
+    await wait(700)
   }
   S.flyTags = []
   S.title = '你的阅读画像（初步）'
@@ -122,11 +122,11 @@ async function funnel() {
   await wait(800)
 }
 async function typeLine(line: { kind: string; text: string; shown: string }) {
-  if (FX.low) { line.shown = line.text; return }
-  const cps = 16
-  for (let i = 1; i <= line.text.length && !aborted; i++) {
+  // 每秒 16 个字；旧平板每次多出几个字、少刷新几次，总时长不变
+  const cps = 16, step = FX.low ? 4 : 1
+  for (let i = step; i < line.text.length + step && !aborted; i += step) {
     line.shown = line.text.slice(0, i)
-    await new Promise((r) => setTimeout(r, 1000 / cps))
+    await new Promise((r) => setTimeout(r, (1000 / cps) * step))
   }
   line.shown = line.text
 }
