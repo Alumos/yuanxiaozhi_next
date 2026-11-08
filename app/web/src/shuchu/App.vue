@@ -233,7 +233,7 @@ const thumb = computed(() => (stage.value === 'work' ? campusThumb() : ''))
 </template>
 
 <style scoped>
-.wk { height: calc(100vh - 64px); height: calc(100dvh - 64px); display: flex; }
+.wk { height: calc(100vh - 64px - var(--icp-h)); height: calc(100dvh - 64px - var(--icp-h)); display: flex; }
 .task { width: 55%; overflow: auto; -webkit-overflow-scrolling: touch; padding: 16px 18px 30px; display: flex; flex-direction: column; gap: 12px; }
 .task > * { flex-shrink: 0; }
 .cls { padding: 16px 20px; border-left: 8px solid var(--accent); }
@@ -285,7 +285,7 @@ textarea:focus, .note:focus { border-color: var(--accent); outline: none; }
 .side { display: flex; gap: 8px; overflow-x: auto; padding: 8px 14px; }
 .sv { width: 200px; flex: none; text-align: center; font-size: 15px; }
 .sv img { width: 100%; border-radius: 8px; }
-.send { padding: 10px 14px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: #fff; }
+.send { padding: 10px 14px 12px; border-top: 1px solid var(--line); background: #fff; }
 .busy { color: var(--amber); font-weight: 700; margin-bottom: 6px; text-align: center; }
 .send .row { display: flex; align-items: center; gap: 12px; }
 .send .sp { flex: 1; }

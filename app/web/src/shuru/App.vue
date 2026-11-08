@@ -183,7 +183,7 @@ const KIND: Record<string, string> = { ask: '', retry: ' · 再试', focus: ' ·
 </template>
 
 <style scoped>
-.sr { height: calc(100vh - 64px); height: calc(100dvh - 64px); display: flex; }
+.sr { height: calc(100vh - 64px - var(--icp-h)); height: calc(100dvh - 64px - var(--icp-h)); display: flex; }
 .in { width: 46%; overflow: auto; -webkit-overflow-scrolling: touch; padding: 14px 18px 24px; display: flex; flex-direction: column; gap: 6px; }
 .in > * { flex-shrink: 0; }
 .hi { display: flex; align-items: center; gap: 12px; font-size: 19px; margin-bottom: 4px; }
@@ -237,7 +237,7 @@ h3 small { font-size: 15px; color: var(--muted); font-weight: 500; }
 .bring { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 17px; }
 .tip { font-size: 17px; background: #fff6e5; border-radius: 10px; padding: 8px 12px; }
 .stat { font-size: 15px; }
-.bar { display: flex; flex-direction: column; gap: 8px; padding: 10px 14px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: #fff; }
+.bar { display: flex; flex-direction: column; gap: 8px; padding: 10px 14px 12px; border-top: 1px solid var(--line); background: #fff; }
 .rrow { display: flex; justify-content: flex-start; }
 .send { flex: none; flex-direction: column; gap: 4px; min-width: 120px; padding: 0 14px; font-size: 18px; border-radius: 14px; }
 @media (orientation: portrait), (max-width: 900px) {

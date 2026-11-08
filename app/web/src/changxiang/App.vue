@@ -144,7 +144,7 @@ function again() { sent.value = null }
 .col small { align-self: flex-end; color: var(--muted); font-size: 14px; }
 .bad input, .bad textarea { border-color: var(--red) !important; animation: shake .3s; }
 @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
-.bar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 24px calc(12px + env(safe-area-inset-bottom)); background: rgba(255, 253, 249, .97); border-top: 1px solid var(--line); z-index: 10; }
+.bar { position: fixed; left: 0; right: 0; bottom: var(--icp-h); display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 24px; background: rgba(255, 253, 249, .97); border-top: 1px solid var(--line); z-index: 10; }
 .bar .btn { min-width: 260px; }
 .done { display: flex; flex-direction: column; align-items: center; gap: 20px; padding-top: 20px; }
 .scroll { width: min(900px, 100%); display: flex; flex-direction: column; align-items: stretch; animation: unroll .7s var(--ease) both; transform-origin: top center; }

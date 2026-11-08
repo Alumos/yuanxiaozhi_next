@@ -26,7 +26,7 @@ function onKey(e: KeyboardEvent) {
   const map: Record<string, string> = { ArrowRight: 'next', ArrowLeft: 'prev', p: 'pause', P: 'pause', r: 'replay', R: 'replay', Escape: 'home' }
   if (map[k]) { e.preventDefault(); emit('key', map[k]) }
 }
-onMounted(() => { fit(); addEventListener('resize', fit); addEventListener('mousemove', onMove); addEventListener('keydown', onKey) })
+onMounted(() => { document.body.classList.add('has-stage'); fit(); addEventListener('resize', fit); addEventListener('mousemove', onMove); addEventListener('keydown', onKey) })
 onBeforeUnmount(() => { removeEventListener('resize', fit); removeEventListener('mousemove', onMove); removeEventListener('keydown', onKey) })
 </script>
 <template>
@@ -35,6 +35,7 @@ onBeforeUnmount(() => { removeEventListener('resize', fit); removeEventListener(
       <slot />
       <div class="ctl" :class="{ on: bar }" @mouseenter="show" @mousemove="show"><slot name="controls" /></div>
       <i class="dot" :class="props.mode" :title="props.mode" />
+      <a class="sicp" href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">苏ICP备2021038338号-1</a>
     </div>
   </div>
 </template>
@@ -47,6 +48,7 @@ onBeforeUnmount(() => { removeEventListener('resize', fit); removeEventListener(
 .ctl :deep(button.on) { background: var(--accent); }
 .ctl :deep(button.warn) { background: #a8362a; }
 .ctl :deep(.sep) { width: 2px; height: 40px; background: rgba(255, 255, 255, .2); }
+.sicp { position: absolute; left: 18px; bottom: 10px; z-index: 55; font-size: 16px; color: rgba(140, 134, 124, .55); text-decoration: none; }
 .dot { position: absolute; right: 14px; bottom: 12px; width: 14px; height: 14px; border-radius: 50%; background: #9aa; z-index: 70; opacity: .8; }
 .dot.live { background: #2bc06b; } .dot.replay { background: #f0b400; } .dot.mock { background: #9aa4a6; }
 </style>

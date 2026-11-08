@@ -6,7 +6,7 @@ import YxzAvatar from '../common/components/YxzAvatar.vue'
 import { get } from '../common/api'
 const base = ref(location.origin)
 const items = [
-  { k: 'input', t: '输入', d: '和元小智对话', p: '/shuru/' },
+  { k: 'input', t: '输入', d: '秋假攻略', p: '/shuru/' },
   { k: 'compute', t: '计算', d: '智能图书管理员', p: '/jisuan/' },
   { k: 'output', t: '输出', d: '疏散路线图', p: '/shuchu/' },
   { k: 'imagine', t: '畅想', d: '元小智的新本领', p: '/changxiang/' },

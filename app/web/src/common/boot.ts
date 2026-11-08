@@ -7,4 +7,8 @@ export function boot(App: Component, opts: { screen?: boolean } = {}) {
   if (!opts.screen) probeFps()
   get('/api/common/me').then((m) => { if (m.lowfx) setLow(true); FX.scale = m.anim_scale || 1 }).catch(() => {})
   createApp(App).mount('#app')
+  const f = document.createElement('footer')
+  f.className = 'icp'
+  f.innerHTML = '<a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">苏ICP备2021038338号-1</a>'
+  document.body.appendChild(f)
 }

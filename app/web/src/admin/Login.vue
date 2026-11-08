@@ -20,7 +20,7 @@ async function go() {
   </main>
 </template>
 <style scoped>
-.lg { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+.lg { min-height: calc(100vh - var(--icp-h)); display: flex; align-items: center; justify-content: center; }
 .box { padding: 40px; display: flex; flex-direction: column; gap: 18px; align-items: center; width: 420px; }
 h1 { font-size: 30px; }
 input { width: 100%; min-height: 64px; font-size: 30px; text-align: center; border-radius: 14px; border: 2px solid var(--line); letter-spacing: 6px; }

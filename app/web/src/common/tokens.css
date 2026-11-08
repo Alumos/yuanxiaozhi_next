@@ -16,6 +16,7 @@
   --fs-body: 19px; --fs-2: 16px; --fs-card: 23px; --fs-title: 28px; --fs-big: 40px;
   --font: "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei", system-ui, sans-serif;
   --r: 16px;
+  --icp-h: calc(20px + env(safe-area-inset-bottom));
   --shadow: 0 2px 10px rgba(31, 45, 51, .08);
 }
 body[data-link="input"] { --accent: var(--input); --accent-soft: var(--input-soft); }
@@ -31,6 +32,14 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
 input, textarea { font: inherit; color: inherit; }
 .num { font-variant-numeric: tabular-nums; }
 h1, h2, h3, p { margin: 0; }
+
+/* 备案号：每页底部，浅灰小字 */
+.icp { position: fixed; left: 0; right: 0; bottom: 0; z-index: 2; height: var(--icp-h); padding-bottom: env(safe-area-inset-bottom); display: flex; align-items: center; justify-content: center; background: var(--bg); }
+.icp a { font-size: 12px; line-height: 20px; color: #b4aea3; text-decoration: none; letter-spacing: .02em; }
+.icp a:hover { color: #8f8a80; text-decoration: underline; }
+body { padding-bottom: var(--icp-h); }
+body.has-stage { padding-bottom: 0; }
+body.has-stage > .icp { display: none; }
 
 /* 按钮 */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 56px; min-width: 56px; padding: 0 26px; border-radius: 14px; font-size: 20px; font-weight: 700; background: var(--accent); color: #fff; transition: transform var(--t-light) var(--ease), opacity var(--t-light); user-select: none; }

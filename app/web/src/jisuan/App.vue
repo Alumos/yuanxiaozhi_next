@@ -324,7 +324,7 @@ const shownRes = computed<Result | null>(() => (showFirst.value && cur.value?.fi
 </template>
 
 <style scoped>
-.pg { height: calc(100vh - 64px); height: calc(100dvh - 64px); overflow: auto; -webkit-overflow-scrolling: touch; }
+.pg { height: calc(100vh - 64px - var(--icp-h)); height: calc(100dvh - 64px - var(--icp-h)); overflow: auto; -webkit-overflow-scrolling: touch; }
 .loading { display: flex; justify-content: center; padding-top: 120px; }
 .intro { max-width: 760px; margin: 0 auto; padding: 50px 24px; display: flex; flex-direction: column; align-items: center; gap: 26px; text-align: center; }
 .bubble { padding: 28px 34px; font-size: 24px; line-height: 1.7; }
@@ -389,7 +389,7 @@ const shownRes = computed<Result | null>(() => (showFirst.value && cur.value?.fi
 .lk button.on { background: #e3f5ea; color: #148a4f; box-shadow: inset 0 0 0 2px #148a4f; }
 .lk button.no.on { background: #fdeae6; color: #c0432f; box-shadow: inset 0 0 0 2px #c0432f; }
 .why100 { margin: 14px 4px; font-size: 16px; }
-.bar-b { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 14px; padding: 12px 22px calc(12px + env(safe-area-inset-bottom)); background: rgba(255, 253, 249, .97); border-top: 1px solid var(--line); flex-wrap: wrap; z-index: 10; }
+.bar-b { position: fixed; left: 0; right: 0; bottom: var(--icp-h); display: flex; align-items: center; gap: 14px; padding: 12px 22px; background: rgba(255, 253, 249, .97); border-top: 1px solid var(--line); flex-wrap: wrap; z-index: 10; }
 .bar-b .sp { flex: 1; }
 .donetip { color: var(--accent); font-weight: 700; font-size: 17px; }
 .stars { display: flex; align-items: center; gap: 2px; font-size: 18px; }
