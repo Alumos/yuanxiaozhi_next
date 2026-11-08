@@ -62,6 +62,7 @@ type App struct {
 	dirty    sync.Map // module name -> bool
 	Started  time.Time
 	Logger   *log.Logger
+	OnConfig func(Config)
 }
 
 func NewApp(content, data, pin, mode string) (*App, error) {
@@ -438,6 +439,9 @@ func (a *App) CommonRoutes(mux *http.ServeMux, llmStatus func() any) {
 		case "config":
 			a.SetCfg(func(c *Config) { json.Unmarshal(in.Config, c) })
 			c := a.Cfg()
+			if a.OnConfig != nil {
+				a.OnConfig(c)
+			}
 			for _, h := range a.Hubs {
 				h.Publish("all", "config", map[string]any{"lowfx": c.LowFX, "anim_scale": c.AnimScale, "show_draft": c.ShowDraft})
 			}

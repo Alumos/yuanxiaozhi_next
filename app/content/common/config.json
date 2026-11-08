@@ -1,7 +1,7 @@
 {
-  "max_concurrency": 10,
+  "max_concurrency": 12,
   "effort_style": "openai",
-  "effort": { "jisuan.recommend": "low", "shuchu.route_draw": "off" },
+  "effort": { "jisuan.recommend": "low", "shuchu.route_draw": "off", "shuru.guide": "off" },
   "use_llm": true,
   "max_attempts": 3,
   "lowfx": false,

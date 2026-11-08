@@ -4,6 +4,7 @@ package llm
 
 import (
 	"bufio"
+	"math/rand/v2"
 	"bytes"
 	"context"
 	"crypto/tls"
@@ -58,6 +59,8 @@ type Gateway struct {
 	running  int
 	waiters  [3][]chan struct{}
 	backoff  time.Time
+	lastCut  time.Time
+	Log      func(format string, a ...any)
 
 	stats sync.Map // scene -> *SceneStats
 	ok    atomic.Int64
@@ -182,20 +185,25 @@ func (g *Gateway) wake() {
 }
 
 // throttle halves concurrency on 429/5xx; recover() restores it step by step after 30 s.
+// throttle: a burst of failures counts once (at most one cut per 10 s), and the limit never drops
+// below a classroom-safe floor, so one bad moment cannot collapse 25 tablets into a single queue.
 func (g *Gateway) throttle() {
 	g.mu.Lock()
-	if g.limit > 1 {
-		g.limit = (g.limit + 1) / 2
+	defer g.mu.Unlock()
+	g.backoff = time.Now().Add(20 * time.Second)
+	if time.Since(g.lastCut) < 10*time.Second {
+		return
 	}
-	g.backoff = time.Now().Add(30 * time.Second)
-	g.mu.Unlock()
+	g.lastCut = time.Now()
+	floor := min(8, g.maxLimit)
+	g.limit = max(floor, (g.limit+1)/2)
 }
 
 func (g *Gateway) recover() {
-	for range time.Tick(5 * time.Second) {
+	for range time.Tick(3 * time.Second) {
 		g.mu.Lock()
 		if g.limit < g.maxLimit && time.Now().After(g.backoff) {
-			g.limit++
+			g.limit = min(g.maxLimit, g.limit+2)
 		}
 		g.mu.Unlock()
 		g.wake()
@@ -247,12 +255,15 @@ func (g *Gateway) Stream(ctx context.Context, r Req, onDelta func(Delta)) (Usage
 	for attempt := 0; attempt < 2; attempt++ {
 		var got bool
 		u, got, err = g.once(ctx, r, onDelta)
+		if err != nil && g.Log != nil && ctx.Err() == nil {
+			g.Log("llm %s attempt %d: %v", r.Scene, attempt+1, err)
+		}
 		if err == nil || got || ctx.Err() != nil || !errors.Is(err, ErrStatus) {
 			break
 		}
 		g.throttle()
 		select {
-		case <-time.After(800 * time.Millisecond):
+		case <-time.After(time.Duration(600+rand.IntN(900)) * time.Millisecond):
 		case <-ctx.Done():
 		}
 	}
@@ -346,6 +357,9 @@ func (g *Gateway) once(ctx context.Context, r Req, onDelta func(Delta)) (Usage, 
 		if json.Unmarshal(d, &ch) != nil {
 			continue
 		}
+		if ch.Error != nil && !got {
+			return u, false, fmt.Errorf("%w: stream error: %s", ErrStatus, ch.Error.Message)
+		}
 		if ch.Usage != nil {
 			u.Prompt = ch.Usage.Prompt
 			u.Completion = ch.Usage.Completion
@@ -368,10 +382,16 @@ func (g *Gateway) once(ctx context.Context, r Req, onDelta func(Delta)) (Usage, 
 	if err := sc.Err(); err != nil && ctx.Err() == nil {
 		return u, got, err
 	}
+	if !got && ctx.Err() == nil { // 网关偶尔返回 200 却一个字也没有：当作可重试的错误
+		return u, false, fmt.Errorf("%w: empty response", ErrStatus)
+	}
 	return u, got, ctx.Err()
 }
 
 type chunk struct {
+	Error *struct {
+		Message string `json:"message"`
+	} `json:"error"`
 	Choices []struct {
 		Delta struct {
 			Content          string `json:"content"`

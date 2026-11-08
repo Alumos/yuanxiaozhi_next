@@ -29,6 +29,9 @@ async function newClass() {
       </div>
       <p class="muted">实时：调用真实模型并自动录制；回放：断网时用彩排录下的回答；模拟：不联网。本地计算永远真实运行。</p>
       <label class="sw"><input type="checkbox" :checked="d.config.use_llm" @change="act({ action: 'config', config: { use_llm: ($event.target as HTMLInputElement).checked } })" /> 使用大模型（关掉后全部走本地算法）</label>
+      <label class="sw">同时请求模型的上限
+        <input class="numin" type="number" min="1" max="40" :value="d.config.max_concurrency" @change="act({ action: 'config', config: { max_concurrency: Number(($event.target as HTMLInputElement).value) } })" />
+        <small class="muted">网关稳定时可调到 25；网关报错多时调小（默认 12），多出来的请求在本机排队</small></label>
       <label class="sw"><input type="checkbox" :checked="d.config.lowfx" @change="act({ action: 'config', config: { lowfx: ($event.target as HTMLInputElement).checked } })" /> 低性能模式（旧平板）</label>
     </section>
     <section class="card">
@@ -77,6 +80,7 @@ h2 { font-size: 26px; display: flex; gap: 12px; align-items: center; }
 .seg > button.on { background: var(--accent); color: #fff; }
 .sw { display: flex; gap: 10px; align-items: center; font-size: 19px; }
 .sw input { width: 26px; height: 26px; }
+.sw .numin { width: 90px; height: 46px; font-size: 22px; text-align: center; border-radius: 10px; border: 2px solid var(--line); }
 .ok { font-size: 16px; padding: 4px 12px; border-radius: 999px; background: #e3f5ea; color: #148a4f; }
 .ok.bad { background: #fdeae6; color: #c0432f; }
 .err { color: var(--red); }
