@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'node:path'
 
-const pages = ['index', 'admin', 'login', 'jisuan/index', 'jisuan/screen', 'shuchu/index', 'shuchu/screen', 'shuru/index', 'shuru/screen']
+const pages = ['index', 'admin', 'login', 'jisuan/index', 'jisuan/screen', 'shuchu/index', 'shuchu/screen', 'shuru/index', 'shuru/screen', 'changxiang/index', 'changxiang/screen']
 
 export default defineConfig({
   plugins: [vue()],

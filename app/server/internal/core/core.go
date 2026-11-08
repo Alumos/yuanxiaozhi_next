@@ -443,6 +443,16 @@ func (a *App) CommonRoutes(mux *http.ServeMux, llmStatus func() any) {
 			}
 		case "clear_seats":
 			a.ClearSeats()
+		case "new_class": // 换下一个班：清空所有环节的课堂数据、座位和学生图片；保留回放录音和设置
+			for _, m := range a.modules {
+				m.Reset()
+				a.SaveNow(m.Name())
+			}
+			a.ClearSeats()
+			up := filepath.Join(a.Data, "uploads")
+			os.RemoveAll(up)
+			os.MkdirAll(filepath.Join(up, "shuchu"), 0o755)
+			a.Logger.Printf("new_class: 已清空课堂数据")
 		case "reset":
 			for _, m := range a.modules {
 				if in.Module == "" || in.Module == m.Name() {
@@ -490,11 +500,12 @@ func (a *App) Static(dist fs.FS) http.Handler {
 		"/jisuan/": "jisuan/index.html", "/jisuan/screen": "jisuan/screen.html",
 		"/shuchu/": "shuchu/index.html", "/shuchu/screen": "shuchu/screen.html",
 		"/shuru/": "shuru/index.html", "/shuru/screen": "shuru/screen.html",
+		"/changxiang/": "changxiang/index.html", "/changxiang/screen": "changxiang/screen.html",
 	}
-	teacherPages := map[string]bool{"/admin": true, "/jisuan/screen": true, "/shuchu/screen": true, "/shuru/screen": true}
+	teacherPages := map[string]bool{"/admin": true, "/jisuan/screen": true, "/shuchu/screen": true, "/shuru/screen": true, "/changxiang/screen": true}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Path
-		if p == "/jisuan" || p == "/shuchu" || p == "/shuru" {
+		if p == "/jisuan" || p == "/shuchu" || p == "/shuru" || p == "/changxiang" {
 			http.Redirect(w, r, p+"/", http.StatusFound)
 			return
 		}

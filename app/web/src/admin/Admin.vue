@@ -10,6 +10,14 @@ onMounted(() => { load(); t = window.setInterval(load, 3000) })
 onBeforeUnmount(() => clearInterval(t))
 async function act(body: any, ask?: string) { if (ask && !confirm(ask)) return; await post('/api/common/admin', body); load() }
 const pct = (v: number) => (v * 100).toFixed(0) + '%'
+const cleared = ref('')
+async function newClass() {
+  if (!confirm('确定清空本节课的全部数据？\n学生记录、路线图、畅想、座位都会删除，不能恢复。')) return
+  if (!confirm('再确认一次：现在要换下一个班了吗？')) return
+  await post('/api/common/admin', { action: 'new_class' })
+  cleared.value = new Date().toLocaleTimeString()
+  load()
+}
 </script>
 <template>
   <YxzHeader title="教师控制台" link="compute" />
@@ -34,6 +42,13 @@ const pct = (v: number) => (v * 100).toFixed(0) + '%'
       </table>
       <p class="muted">回放录音：{{ JSON.stringify(d.llm.replay) }}</p>
     </section>
+    <section class="card nc">
+      <h2>换下一个班</h2>
+      <p>一键清空<b>这节课产生的所有临时数据</b>：四个环节的学生记录、选书和推荐、各组的路线图和对话、畅想、投票、平板座位。所有平板会自动回到选座位。</p>
+      <p class="muted">保留：设置、运行模式、彩排录下的回放（断网备用）。</p>
+      <button class="btn big danger" @click="newClass">清空本节课数据，准备下一个班</button>
+      <p v-if="cleared" class="ok2">已清空（{{ cleared }}），可以开始下一个班了</p>
+    </section>
     <section class="card">
       <h2>课堂</h2>
       <p>已入座平板 <b>{{ d.seats }}</b> 台 · 在线：计算 {{ d.hubs.jisuan?.students }} / 输出 {{ d.hubs.shuchu?.students }} · 大屏 {{ (d.hubs.jisuan?.screens || 0) + (d.hubs.shuchu?.screens || 0) }}</p>
@@ -41,12 +56,14 @@ const pct = (v: number) => (v * 100).toFixed(0) + '%'
       <div class="seg">
         <a class="btn soft" href="/jisuan/screen" target="_blank">计算大屏</a>
         <a class="btn soft" href="/shuchu/screen" target="_blank">输出大屏</a>
+        <a class="btn soft" href="/changxiang/screen" target="_blank">畅想大屏</a>
         <a class="btn soft" href="/" target="_blank">入口二维码</a>
       </div>
       <div class="seg">
         <button class="btn ghost" @click="act({ action: 'clear_seats' }, '清空所有座位？平板需要重新选座位。')">清空座位</button>
         <button class="btn ghost" @click="act({ action: 'reset', module: 'jisuan' }, '重置计算环节？')">重置计算环节</button>
         <button class="btn ghost" @click="act({ action: 'reset', module: 'shuchu' }, '重置输出环节？')">重置输出环节</button>
+        <button class="btn ghost" @click="act({ action: 'reset', module: 'changxiang' }, '清空畅想？')">清空畅想</button>
       </div>
     </section>
   </main>
@@ -63,6 +80,10 @@ h2 { font-size: 26px; display: flex; gap: 12px; align-items: center; }
 .ok { font-size: 16px; padding: 4px 12px; border-radius: 999px; background: #e3f5ea; color: #148a4f; }
 .ok.bad { background: #fdeae6; color: #c0432f; }
 .err { color: var(--red); }
+.nc { border: 3px solid #f3c9c0; }
+.nc b { color: var(--red); }
+.btn.danger { background: var(--red); align-self: flex-start; }
+.ok2 { color: var(--output); font-weight: 800; font-size: 20px; }
 table { border-collapse: collapse; font-size: 17px; }
 td, th { border-bottom: 1px solid var(--line); padding: 8px 12px; text-align: left; }
 .ip { margin-right: 14px; font-size: 22px; }

@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"yxz/internal/changxiang"
 	"yxz/internal/core"
 	"yxz/internal/jisuan"
 	"yxz/internal/llm"
@@ -91,7 +92,8 @@ func main() {
 		fmt.Fprintln(os.Stderr, "输出环节内容有误：", err)
 		os.Exit(1)
 	}
-	mods := []core.Module{js, sc, shuru.New(app)}
+	cx := changxiang.New(app)
+	mods := []core.Module{js, sc, shuru.New(app), cx}
 	bad := 0
 	for _, m := range mods {
 		for _, e := range m.Check(os.DirFS(*content)) {
@@ -120,7 +122,7 @@ func main() {
 		m.Routes(mux)
 	}
 	app.CommonRoutes(mux, func() any {
-		return map[string]any{"gateway": gw.Status(), "jisuan": js.Status(), "shuchu": sc.Status(), "replay": rp.Count(), "content_ok": bad == 0}
+		return map[string]any{"gateway": gw.Status(), "jisuan": js.Status(), "shuchu": sc.Status(), "changxiang": cx.Status(), "replay": rp.Count(), "content_ok": bad == 0}
 	})
 	mux.Handle("/", gz(app.Static(core.Dist())))
 	go app.SnapshotLoop()

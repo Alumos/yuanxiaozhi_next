@@ -155,7 +155,12 @@ async function setStars(n: number) { st.stars = n; await post('/api/jisuan/stars
 async function retry() {
   try { apply(await post('/api/jisuan/retry')); await loadRound() } catch (e) { toast((e as Error).message, 'warn') }
 }
-async function finish() { await post('/api/jisuan/finish'); st.stage = 'done' }
+const doneFlash = ref(false)
+async function finish() {
+  await post('/api/jisuan/finish'); st.stage = 'done'
+  doneFlash.value = true
+  setTimeout(() => { doneFlash.value = false; toast('可以点顶栏，去体验其他环节', 'ok', 4000) }, 4000)
+}
 function openAgain() {
   for (const p of res.value?.picks || []) if (likes[p.book_id] === undefined) likes[p.book_id] = undefined
   againOpen.value = true
@@ -277,10 +282,11 @@ const shownRes = computed<Result | null>(() => (showFirst.value && cur.value?.fi
           <button v-for="n in 5" :key="n" :class="{ on: n <= st.stars }" @click="setStars(n)" :aria-label="n + ' 星'"><span v-html="n <= st.stars ? ICON.starFill : ICON.star" /></button>
         </div>
         <span class="sp" />
-        <template v-if="isLatest && st.stage !== 'done'">
-          <button v-if="!st.againUsed" class="btn soft" @click="openAgain"><span v-html="ICON.bulb" />再想想</button>
+        <template v-if="isLatest">
+          <button v-if="!st.againUsed && st.stage !== 'done'" class="btn soft" @click="openAgain"><span v-html="ICON.bulb" />再想想</button>
           <RetryButton :left="st.max - st.attempt" confirm-text="重新选 5 轮书，看看元小智这次会怎么猜？" @go="retry" />
-          <button class="btn" @click="finish">完成</button>
+          <button v-if="st.stage !== 'done'" class="btn" @click="finish">完成</button>
+          <span v-else class="donetip">已完成 · 可以点顶栏去别的环节</span>
         </template>
       </footer>
     </section>
@@ -311,7 +317,7 @@ const shownRes = computed<Result | null>(() => (showFirst.value && cur.value?.fi
   </div>
 
   <Analysis v-if="feed" :key="feedKey" :feed="feed" :replay="replaying" @finish="onFinish" />
-  <LookAtScreen v-if="st.stage === 'done' && !feed" text="谢谢你！请看大屏" sub="我会继续学习你的口味" />
+  <Transition name="fade"><LookAtScreen v-if="doneFlash" text="谢谢你！请看大屏" sub="我会继续学习你的口味" /></Transition>
   <LookAtScreen v-if="st.paused" text="请看大屏" />
   <LookAtScreen v-if="st.projected" text="你的分析正在大屏上播放" sub="和大家说说，元小智猜得准吗？" />
   <LookAtScreen v-if="st.moved" text="已在别的平板上继续" sub="这台平板可以交给老师" />
@@ -385,6 +391,7 @@ const shownRes = computed<Result | null>(() => (showFirst.value && cur.value?.fi
 .why100 { margin: 14px 4px; font-size: 16px; }
 .bar-b { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 14px; padding: 12px 22px calc(12px + env(safe-area-inset-bottom)); background: rgba(255, 253, 249, .97); border-top: 1px solid var(--line); flex-wrap: wrap; z-index: 10; }
 .bar-b .sp { flex: 1; }
+.donetip { color: var(--accent); font-weight: 700; font-size: 17px; }
 .stars { display: flex; align-items: center; gap: 2px; font-size: 18px; }
 .stars span:first-child { margin-right: 6px; }
 .stars button { width: 48px; height: 48px; color: #d3c8b4; }

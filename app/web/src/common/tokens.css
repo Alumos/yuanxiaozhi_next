@@ -6,6 +6,7 @@
   --input: #2a73c9; --input-soft: #e5f0fb;
   --compute: #8a55d6; --compute-soft: #f1e9fb;
   --output: #149a58; --output-soft: #e3f5ea;
+  --imagine: #e0702a; --imagine-soft: #fdeee2;
   --calc-bg: #141a2e; --calc-panel: #1d2540; --calc-ink: #e8ecff; --calc-dim: #8a93b8;
   --calc-glow: #9b7bff; --calc-cyan: #3fd7e8; --calc-hot: #ff8a4c;
   --accent: var(--compute); --accent-soft: var(--compute-soft);
@@ -20,6 +21,7 @@
 body[data-link="input"] { --accent: var(--input); --accent-soft: var(--input-soft); }
 body[data-link="compute"] { --accent: var(--compute); --accent-soft: var(--compute-soft); }
 body[data-link="output"] { --accent: var(--output); --accent-soft: var(--output-soft); }
+body[data-link="imagine"] { --accent: var(--imagine); --accent-soft: var(--imagine-soft); }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; height: 100%; }

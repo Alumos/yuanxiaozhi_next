@@ -31,13 +31,12 @@ const S = reactive({
   flyTags: [] as { id: number; tag: string; v: number; neg: boolean }[],
   quip: '',
   elapsed: 0,
-  skipOK: false,
   struck: false,
 })
 let aborted = false
 let flySeq = 0
 const t0 = Date.now()
-const timer = window.setInterval(() => { S.elapsed = Math.floor((Date.now() - t0) / 1000); if (S.elapsed >= 5) S.skipOK = true }, 500)
+const timer = window.setInterval(() => { S.elapsed = Math.floor((Date.now() - t0) / 1000)}, 500)
 onBeforeUnmount(() => { aborted = true; clearInterval(timer) })
 
 const tr = computed(() => props.feed.trace)
@@ -201,7 +200,6 @@ async function run() {
   if (!aborted) emit('finish')
 }
 onMounted(run)
-function skip() { aborted = true; emit('finish') }
 
 const funnelSteps = computed(() => tr.value?.funnel || [])
 const candBooks = computed(() => (tr.value?.candidates || []).map((c) => ({ c, b: book(c.id)! })).filter((x) => x.b))
@@ -218,7 +216,6 @@ const candBooks = computed(() => (tr.value?.candidates || []).map((c) => ({ c, b
         <span v-if="S.seg === 'rewind'" class="rw"><span v-html="ICON.rewind" />倒带 · 第 {{ curRound?.n }} 轮 <span class="num">{{ tc }}</span></span>
       </div>
       <div class="live"><i />计算中 <span class="num">{{ String(Math.floor(S.elapsed / 60)).padStart(2, '0') }}:{{ String(S.elapsed % 60).padStart(2, '0') }}</span></div>
-      <button v-if="S.skipOK" class="skip" @click="skip"><span v-html="ICON.skip" />跳过动画</button>
     </div>
 
     <div class="body">
