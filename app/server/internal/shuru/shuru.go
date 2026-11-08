@@ -210,9 +210,7 @@ func (m *Module) compose(prefs map[string][]string, text, focus string) (map[str
 	if sent == "" {
 		sent = "（同学什么信息也没给）"
 	}
-	if _, ok := out["from"]; !ok {
-		sent += "\n（同学没说从哪里出发，按" + m.chips.FromDefault + "估算交通）"
-	}
+	sent += "\n出发地：" + m.chips.FromDefault + "（学校所在地）"
 	if focus != "" {
 		sent += "\n同学想看「" + focus + "」的攻略：请把它放在第一个推荐，并写它的攻略。"
 	}

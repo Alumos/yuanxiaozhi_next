@@ -124,11 +124,6 @@ const KIND: Record<string, string> = { ask: '', retry: ' · 再试', focus: ' ·
           <button v-for="it in g.items" :key="it" class="ch" :class="{ on: prefs[g.k]?.includes(it) }" @click="toggle(g, it)">{{ it }}</button>
         </div>
       </div>
-      <h3>还想告诉元小智什么？</h3>
-      <div class="say">
-        <textarea ref="ta" v-model="text" maxlength="80" rows="3" :placeholder="meta.text_ph" />
-        <button class="mic" :class="{ on: voice }" @click="useVoice" aria-label="用输入法语音"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>用语音说</button>
-      </div>
     </section>
 
     <!-- 输出区 -->
@@ -144,7 +139,7 @@ const KIND: Record<string, string> = { ask: '', retry: ' · 再试', focus: ' ·
         </div>
         <div v-else class="empty">
           <YxzAvatar state="idle" :size="90" />
-          <p>左边选一选、写一写，<br />再点“发给元小智”</p>
+          <p>左边选一选，下面写一句，<br />再点“发给元小智”</p>
           <div v-if="preview.length" class="pv card"><h4>元小智将会收到：</h4><p v-for="p in preview" :key="p.t"><b>{{ p.t }}：</b>{{ p.v }}</p></div>
         </div>
 
@@ -172,9 +167,14 @@ const KIND: Record<string, string> = { ask: '', retry: ' · 再试', focus: ' ·
         </div>
       </div>
       <footer class="bar">
-        <RetryButton v-if="guides.length" :left="left" :busy="busy" confirm-text="输入一个字都不改，让元小智再写一份，看看会不会一样？" @go="send(true)" />
-        <span class="sp" />
-        <button class="btn big" :disabled="busy || left <= 0" @click="send(false)"><span v-html="ICON.send" />{{ busy ? '元小智正在写……' : guides.length ? '改好了，再发给元小智' : '发给元小智' }}</button>
+        <div v-if="guides.length" class="rrow">
+          <RetryButton :left="left" :busy="busy" confirm-text="输入一个字都不改，让元小智再写一份，看看会不会一样？" @go="send(true)" />
+        </div>
+        <div class="say">
+          <textarea ref="ta" v-model="text" maxlength="80" rows="2" :placeholder="meta.text_ph" />
+          <button class="mic" :class="{ on: voice }" @click="useVoice" aria-label="用输入法语音"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>语音</button>
+          <button class="btn send" :disabled="busy || left <= 0" @click="send(false)"><span v-html="ICON.send" />{{ busy ? '正在写…' : guides.length ? '再发给元小智' : '发给元小智' }}</button>
+        </div>
       </footer>
     </section>
   </main>
@@ -194,10 +194,10 @@ h3 small { font-size: 15px; color: var(--muted); font-weight: 500; }
 .ch { min-height: 46px; padding: 0 16px; border-radius: 999px; background: #fff; box-shadow: inset 0 0 0 2px var(--line); font-size: 18px; font-weight: 600; color: var(--ink-2); transition: transform var(--t-light); }
 .ch:active { transform: scale(.94); }
 .ch.on { background: var(--accent); color: #fff; box-shadow: none; }
-.say { display: flex; gap: 10px; align-items: stretch; }
-.say textarea { flex: 1; min-height: 96px; border-radius: 14px; border: 2px solid var(--line); padding: 10px 14px; font-size: 19px; line-height: 1.5; resize: none; outline: none; background: #fff; }
+.say { display: flex; gap: 8px; align-items: stretch; }
+.say textarea { flex: 1; min-width: 0; min-height: 76px; border-radius: 14px; border: 2px solid var(--line); padding: 10px 14px; font-size: 19px; line-height: 1.5; resize: none; outline: none; background: #fff; }
 .say textarea:focus { border-color: var(--accent); }
-.mic { width: 96px; border-radius: 14px; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.mic { width: 70px; flex: none; border-radius: 14px; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
 .mic svg { width: 30px; height: 30px; }
 .mic.on { background: var(--accent); color: #fff; }
 .out { width: 54%; display: flex; flex-direction: column; background: var(--paper); border-left: 1px solid var(--line); min-width: 0; }
@@ -237,8 +237,9 @@ h3 small { font-size: 15px; color: var(--muted); font-weight: 500; }
 .bring { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 17px; }
 .tip { font-size: 17px; background: #fff6e5; border-radius: 10px; padding: 8px 12px; }
 .stat { font-size: 15px; }
-.bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: #fff; }
-.bar .sp { flex: 1; }
+.bar { display: flex; flex-direction: column; gap: 8px; padding: 10px 14px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: #fff; }
+.rrow { display: flex; justify-content: flex-start; }
+.send { flex: none; flex-direction: column; gap: 4px; min-width: 120px; padding: 0 14px; font-size: 18px; border-radius: 14px; }
 @media (orientation: portrait), (max-width: 900px) {
   .sr { flex-direction: column; height: auto; }
   .in, .out { width: 100%; }
