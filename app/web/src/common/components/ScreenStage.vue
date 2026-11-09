@@ -3,12 +3,15 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 const props = defineProps<{ mode?: string }>()
 const emit = defineEmits<{ (e: 'key', k: string): void }>()
-const scale = ref(1), ox = ref(0), oy = ref(0)
+const scale = ref(1), ox = ref(0), oy = ref(0), sw = ref(1920), sh = ref(1080)
 const bar = ref(false)
 let hideT = 0, digits = '', digitT = 0
+// 舞台至少 1920×1080；窗口比 16:9 更宽（浏览器地址栏占了高度）就把舞台加宽，更窄就加高，铺满整个窗口不留黑边
 function fit() {
-  const k = Math.min(innerWidth / 1920, innerHeight / 1080)
-  scale.value = k; ox.value = (innerWidth - 1920 * k) / 2; oy.value = (innerHeight - 1080 * k) / 2
+  const r = innerWidth / innerHeight
+  sw.value = Math.round(Math.max(1920, 1080 * r)); sh.value = Math.round(Math.max(1080, 1920 / r))
+  const k = Math.min(innerWidth / sw.value, innerHeight / sh.value)
+  scale.value = k; ox.value = (innerWidth - sw.value * k) / 2; oy.value = (innerHeight - sh.value * k) / 2
 }
 function show() { bar.value = true; clearTimeout(hideT); hideT = window.setTimeout(() => (bar.value = false), 5000) }
 function onMove(e: MouseEvent) { if (e.clientY > innerHeight - 90) show() }
@@ -31,7 +34,7 @@ onBeforeUnmount(() => { removeEventListener('resize', fit); removeEventListener(
 </script>
 <template>
   <div class="vp" @scroll="($event.target as HTMLElement).scrollTo(0, 0)">
-    <div class="stage" :style="{ transform: `translate(${ox}px,${oy}px) scale(${scale})` }">
+    <div class="stage" :style="{ width: sw + 'px', height: sh + 'px', transform: `translate(${ox}px,${oy}px) scale(${scale})` }">
       <slot />
       <div class="ctl" :class="{ on: bar }" @mouseenter="show" @mousemove="show"><slot name="controls" /></div>
       <i class="dot" :class="props.mode" :title="props.mode" />
