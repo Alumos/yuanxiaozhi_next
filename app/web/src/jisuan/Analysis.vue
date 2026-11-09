@@ -138,8 +138,9 @@ async function think() {
   for (;;) {
     if (aborted) return
     if (i < props.feed.thoughts.length) {
-      const l = { ...props.feed.thoughts[i], shown: '' }
-      S.thoughts.push(l)
+      S.thoughts.push({ ...props.feed.thoughts[i], shown: '' })
+      // 取数组里的响应式对象再逐字改，否则界面只显示第一个字（旧版直接改了原始对象）
+      const l = S.thoughts[S.thoughts.length - 1]
       if (S.thoughts.length > 6) S.thoughts.shift()
       S.focusCand = -1
       await typeLine(l)

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/* 输出环节 · 教室大屏：V0 任务发布 / V1 提交状态 / V2 规划器慢放 / V3 作品墙 / V4 发布会验收 / V5 问 5 次 */
+/* 输出环节 · 教室大屏：V0 任务发布 / V1 提交状态 / V2 规划演示 / V3 作品墙 / V4 发布会验收 / V5 问 5 次 */
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import LockToggle from '../common/components/LockToggle.vue'
 import ScreenStage from '../common/components/ScreenStage.vue'
@@ -41,7 +41,7 @@ async function ctl(action: string, extra: any = {}) {
   try { return await post('/api/shuchu/screen/control', { action, ...extra }) } catch (e) { toast((e as Error).message, 'warn') }
 }
 
-// ---------------- V2 规划器慢放 ----------------
+// ---------------- V2 规划演示 ----------------
 const pm = reactive({ step: 0, round: 0, flash: 0, paused: false, msg: '', playing: false })
 let resume: (() => void) | null = null
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
@@ -130,11 +130,11 @@ const stats = computed(() => {
 const allSame = computed(() => five.items.length === 5 && new Set(five.items.map((i) => JSON.stringify(i.spec))).size === 1)
 
 function resetAll() { if (window.confirm('重置输出环节？')) ctl('reset').then(load) }
-const order: V[] = ['V0', 'V1', 'V2', 'V3', 'V4', 'V5']
-const NAMES: Record<V, string> = { V0: '任务发布', V1: '提交状态', V2: '规划器', V3: '作品墙', V4: '验收', V5: '问 5 次' }
+const order: V[] = ['V0', 'V1', 'V2', 'V3', 'V4'] // V5 问 5 次课上不用，入口已去掉
+const NAMES: Record<V, string> = { V0: '任务发布', V1: '提交状态', V2: '规划演示', V3: '作品墙', V4: '验收', V5: '问 5 次' }
 function onKey(k: string) {
   if (k === 'pause' && view.value === 'V2') cont()
-  else if (k === 'next') view.value = order[Math.min(5, order.indexOf(view.value) + 1)]
+  else if (k === 'next') view.value = order[Math.min(order.length - 1, order.indexOf(view.value) + 1)]
   else if (k === 'prev') view.value = order[Math.max(0, order.indexOf(view.value) - 1)]
   else if (k === 'home') view.value = 'V1'
   else if (k === 'replay' && view.value === 'V2') runPlan()
@@ -173,13 +173,14 @@ function onKey(k: string) {
     <section v-if="view === 'V2'" class="v2">
       <div class="mapw"><PlanMap :nodes="nodes" :edges="edges" :trace="S.plan" :step="pm.step" :round="pm.round" :flash="pm.flash" /></div>
       <aside>
-        <p class="msg" :class="{ red: pm.paused }">{{ pm.msg || '点“开始计算”' }}</p>
+        <p class="msg" :class="{ red: pm.paused }">{{ pm.msg || '看元小智怎样给 6 个班安排疏散楼梯' }}</p>
+        <button v-if="!pm.playing" class="btn big run" @click="runPlan">{{ pm.step ? '重新计算' : '开始计算' }}</button>
         <button v-if="pm.paused" class="btn big" @click="cont">继续（P）</button>
         <table v-if="S.plan && pm.step >= 3">
           <tr v-for="r in planRows" :key="r.g"><td>{{ r.cls }}</td><td>{{ r.stair }}</td><td><i class="cd" :class="r.color" /></td><td class="num">{{ Math.round(r.total || 0) }} 秒</td></tr>
         </table>
         <ul v-if="pm.step >= 3" class="notes"><template v-for="r in planRows" :key="r.g"><li v-for="n in r.notes" :key="n">{{ r.cls }}：{{ n }}</li></template></ul>
-        <p v-if="S.plan" class="ops muted">规划器比较了 {{ S.plan.ops }} 次</p>
+        <p v-if="S.plan" class="ops muted">元小智一共比较了 {{ S.plan.ops }} 次</p>
       </aside>
     </section>
 
@@ -246,10 +247,8 @@ function onKey(k: string) {
     <template #controls>
       <button v-for="v in order" :key="v" :class="{ on: view === v }" @click="view = v">{{ NAMES[v] }}</button>
       <span class="sep" />
-      <button @click="runPlan">开始计算</button>
       <button v-if="pm.paused" class="on" @click="cont">继续</button>
       <button class="task2" :class="{ on: S.phase === 2 }" @click="setPhase(S.phase === 2 ? 1 : 2)">{{ S.phase === 2 ? '平板：回到任务一' : '平板：进入任务二' }}</button>
-      <button @click="ctl('vote_close')">关闭投票</button>
       <button class="warn" @click="resetAll">重置本环节</button>
     </template>
   </ScreenStage>
@@ -284,6 +283,7 @@ section { position: absolute; left: 0; right: 0; top: 104px; bottom: 0; padding:
 .mapw { flex: none; width: 1130px; height: 920px; background: #fffdf8; border-radius: 16px; overflow: hidden; }
 .v2 aside { flex: 1; color: var(--calc-ink); display: flex; flex-direction: column; gap: 18px; }
 .msg { font-size: 36px; font-weight: 800; line-height: 1.4; }
+.run { align-self: flex-start; min-width: 260px; font-size: 30px; min-height: 76px; }
 .msg.red { color: #ff7a6b; animation: blink 1s infinite; }
 @keyframes blink { 50% { opacity: .6; } }
 table { font-size: 28px; border-collapse: collapse; }

@@ -353,12 +353,29 @@ func (a *App) CommonRoutes(mux *http.ServeMux, llmStatus func() any) {
 			Seat  int  `json:"seat"`
 			Force bool `json:"force"`
 		}
-		if Body(r, &in) != nil || a.GroupOf(in.Seat) == 0 {
+		if Body(r, &in) != nil || (in.Seat != 0 && a.GroupOf(in.Seat) == 0) {
 			Err(w, 400, "没有这个座位号", "bad_seat")
 			return
 		}
 		cur := a.SeatOf(r)
 		a.seatMu.Lock()
+		if in.Seat == 0 { // 自动分配：按平板进入课堂的先后，给最小的空号；已经有号的平板保持原号
+			if cur != 0 {
+				in.Seat = cur
+			} else {
+				for _, st := range a.Seats {
+					if _, used := a.seatTok[st.Seat]; !used {
+						in.Seat = st.Seat
+						break
+					}
+				}
+				if in.Seat == 0 {
+					a.seatMu.Unlock()
+					Err(w, 409, "平板编号已经分完了，请老师在控制台清空座位", "full")
+					return
+				}
+			}
+		}
 		old, taken := a.seatTok[in.Seat]
 		mine := false
 		if c, err := r.Cookie("yxz_seat"); err == nil && c.Value == old {
