@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /* 计算环节 · 教室大屏：V0 书库墙 / V1 全班进度 / V2 投屏回放 / V3 全班汇总 */
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import LockToggle from '../common/components/LockToggle.vue'
 import ScreenStage from '../common/components/ScreenStage.vue'
 import YxzHeader from '../common/components/YxzHeader.vue'
 import BookCover from '../common/components/BookCover.vue'
@@ -129,9 +130,9 @@ watch(view, (v) => { if (v === 'V0') requestAnimationFrame(() => {}) })
 </script>
 
 <template>
-  <ScreenStage :mode="S.mode" lock="jisuan" @key="onKey">
+  <ScreenStage :mode="S.mode" @key="onKey">
     <Toasts />
-    <YxzHeader title="元小智 · 计算" link="compute" big :state="Object.values(analyzing).some(Boolean) ? 'think' : 'idle'">
+    <YxzHeader title="元小智 · 计算" link="compute" big :state="Object.values(analyzing).some(Boolean) ? 'think' : 'idle'"><template #after><LockToggle mod="jisuan" /></template>
       <span v-if="view === 'V2'">{{ v2.seat }} 号平板的分析过程</span>
       <span v-else>智能图书管理员</span>
     </YxzHeader>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /* 输出环节 · 教室大屏：V0 任务发布 / V1 提交状态 / V2 规划器慢放 / V3 作品墙 / V4 发布会验收 / V5 问 5 次 */
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import LockToggle from '../common/components/LockToggle.vue'
 import ScreenStage from '../common/components/ScreenStage.vue'
 import YxzHeader from '../common/components/YxzHeader.vue'
 import YxzAvatar from '../common/components/YxzAvatar.vue'
@@ -141,9 +142,9 @@ function onKey(k: string) {
 </script>
 
 <template>
-  <ScreenStage :mode="S.mode" lock="shuchu" @key="onKey">
+  <ScreenStage :mode="S.mode" @key="onKey">
     <Toasts />
-    <YxzHeader title="元小智 · 输出" link="output" big :state="pm.playing || five.running ? 'think' : 'idle'">疏散路线图发布会</YxzHeader>
+    <YxzHeader title="元小智 · 输出" link="output" big :state="pm.playing || five.running ? 'think' : 'idle'"><template #after><LockToggle mod="shuchu" /></template>疏散路线图发布会</YxzHeader>
 
     <section v-if="view === 'V0'" class="v0">
       <div class="task card">

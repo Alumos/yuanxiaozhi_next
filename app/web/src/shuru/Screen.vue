@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /* 输入环节 · 大屏：全班的“输入墙”（每台平板给了元小智什么）+ 偏好统计；点一台看“输入 → 输出”。 */
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import LockToggle from '../common/components/LockToggle.vue'
 import ScreenStage from '../common/components/ScreenStage.vue'
 import YxzHeader from '../common/components/YxzHeader.vue'
 import RollingNumber from '../common/components/RollingNumber.vue'
@@ -58,9 +59,9 @@ const short = (s: string) => (s || '').replace(/\n.*$/s, '').split('；').map((x
 </script>
 
 <template>
-  <ScreenStage :mode="S.mode" lock="shuru" @key="onKey">
+  <ScreenStage :mode="S.mode" @key="onKey">
     <Toasts />
-    <YxzHeader title="元小智 · 输入" link="input" big>秋假攻略</YxzHeader>
+    <YxzHeader title="元小智 · 输入" link="input" big><template #after><LockToggle mod="shuru" /></template>秋假攻略</YxzHeader>
     <section class="wall">
       <div class="left">
         <div class="ctr">

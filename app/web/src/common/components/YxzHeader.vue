@@ -16,6 +16,7 @@ const href = (p: string) => (props.big ? p + 'screen' : p)
     <div class="l">
       <YxzAvatar :state="state" :size="big ? 68 : 44" />
       <b>{{ title }}</b>
+      <slot name="after" />
     </div>
     <nav class="steps" aria-label="环节入口">
       <template v-for="(s, i) in steps" :key="s.k">
@@ -40,7 +41,7 @@ a.st[href]:active { transform: scale(.94); background: #efeae1; }
 .bar { width: 18px; height: 2px; background: #d9d4cb; }
 .bar.dash { background: repeating-linear-gradient(90deg, #d9d4cb 0 4px, transparent 4px 7px); }
 .big { height: 104px; padding: 0 44px; }
-.big .l b { font-size: 40px; } .big .r { font-size: 30px; }
+.big .l b { font-size: 40px; flex: none; } .big .r { font-size: 30px; }
 .big .st { font-size: 30px; gap: 10px; min-height: 64px; padding: 0 16px; } .big .st i { width: 20px; height: 20px; } .big .bar { width: 40px; height: 3px; }
 @media (max-width: 900px) { .l b { display: none; } .st { padding: 0 8px; font-size: 17px; } .bar { width: 8px; } }
 @media (max-width: 560px) { .r { display: none; } }

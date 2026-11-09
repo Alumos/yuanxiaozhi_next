@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /* 畅想 · 教室大屏：同学们的新本领做成卷轴，三排循环滚动传递；点一卷展开看详情。 */
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import LockToggle from '../common/components/LockToggle.vue'
 import ScreenStage from '../common/components/ScreenStage.vue'
 import YxzHeader from '../common/components/YxzHeader.vue'
 import RollingNumber from '../common/components/RollingNumber.vue'
@@ -58,9 +59,9 @@ const latest = computed(() => shown.value.slice(-1)[0])
 </script>
 
 <template>
-  <ScreenStage :mode="S.mode" lock="changxiang" @key="onKey">
+  <ScreenStage :mode="S.mode" @key="onKey">
     <Toasts />
-    <YxzHeader title="元小智 · 畅想" link="imagine" big>新本领征集</YxzHeader>
+    <YxzHeader title="元小智 · 畅想" link="imagine" big><template #after><LockToggle mod="changxiang" /></template>新本领征集</YxzHeader>
     <section class="wall" :class="{ paused: paused || !!open }">
       <div class="top">
         <h1>同学们希望元小智学会的新本领</h1>
