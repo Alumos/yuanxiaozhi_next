@@ -20,7 +20,7 @@ import { campusThumb, routeJpeg, routeSvg } from './map/render'
 import './map/map.css'
 import type { DrawSpec, RoadNode } from './types'
 
-const G = reactive<any>({ loaded: false, group: 0, class: {}, cards: [], req: '', versions: [], chat: [], busy: 0, max_versions: 5 })
+const G = reactive<any>({ loaded: false, group: 0, class: {}, cards: [], req: '', versions: [], chat: [], busy: 0, max_versions: 5, phase: 1 })
 const nodes = ref<RoadNode[]>([])
 const chips = ref<Record<string, string[]>>({})
 const stage = ref<'loading' | 'seat' | 'work'>('loading')
@@ -56,6 +56,7 @@ async function init() {
   off = events('shuchu', 'student', {
     lock: onLock,
     group_update: (d) => { if (d.seat === ME.seat) applyGroup(d) },
+    phase: (d) => { G.phase = d.phase; toast(d.phase === 2 ? '进入任务二：优化路线图' : '回到任务一：给元小智信息', 'ok') },
     vote: (d) => { vote.open = d.open; vote.cls = d.class || ''; if (d.open) vote.mine = '' },
     verdict: (d) => (verdicts[d.version] = d.verdict),
     look: (d) => (look.value = d.on),
@@ -90,7 +91,7 @@ const checked = computed(() => G.cards.filter((c: any) => c.on).length)
 async function ask(retry = false) {
   if (sending.value || G.busy) return
   clearTimeout(reqT)
-  if (!retry) await post('/api/shuchu/group/cards', { req: reqDraft.value })
+  if (!retry && G.phase >= 2) await post('/api/shuchu/group/cards', { req: reqDraft.value })
   sending.value = true
   try {
     await stream(retry ? '/api/shuchu/group/retry' : '/api/shuchu/group/ask', {}, async (ev, d) => {
@@ -146,7 +147,8 @@ const thumb = computed(() => (stage.value === 'work' ? campusThumb() : ''))
         <p>位置：{{ G.class.building }} {{ G.class.floor }} 楼 {{ G.class.position }} · 人数：<b class="num">{{ G.class.people }}</b></p>
         <p class="std"><b>验收标准</b>沿道路走 · 楼梯走得对 · 到达集合点 · 楼梯不拥堵 · 标出安全提醒 · 符合“给谁看”</p>
       </div>
-      <h3>① 勾选要告诉元小智的信息 <small class="muted">已选 {{ checked }} / 6</small></h3>
+      <template v-if="G.phase < 2">
+      <h3><span class="tk">任务一</span>勾选要告诉元小智的信息 <small class="muted">已选 {{ checked }} / 6</small></h3>
       <div class="cards">
         <div v-for="c in G.cards" :key="c.id" class="ic card" :class="{ on: c.on }">
           <button class="chk" @click="toggle(c)">
@@ -156,17 +158,24 @@ const thumb = computed(() => (stage.value === 'work' ? campusThumb() : ''))
           <input v-if="c.on" :id="'note' + c.id" v-model="notes[c.id]" class="note" maxlength="40" placeholder="补充一句（可选）" @input="noteInput(c.id)" />
         </div>
       </div>
-      <h3>② 对路线图的要求</h3>
+      </template>
+      <template v-else>
+      <h3><span class="tk">任务二</span>优化路线图：写下对路线图的要求</h3>
+      <div class="given">
+        <span class="gl">给了元小智的信息（还可以补）</span>
+        <button v-for="c in G.cards" :key="c.id" class="gc" :class="{ on: c.on }" @click="toggle(c)"><span class="box"><span v-if="c.on" v-html="ICON.check" /></span>{{ '①②③④⑤⑥'[c.id - 1] }} {{ c.title }}</button>
+      </div>
       <textarea id="req" v-model="reqDraft" rows="3" maxlength="120" placeholder="例如：一年级小朋友也能看懂，用绿色大箭头，标出“你在这里”和集合点（可以用输入法的语音）" @input="reqInput" />
       <div class="chips">
         <div v-for="(arr, k) in chips" :key="k" class="cg"><span class="ck">{{ k }}</span><button v-for="t in arr" :key="t" class="chip" @click="addChip(t)">{{ t }}</button></div>
       </div>
+      </template>
     </section>
 
     <!-- 对话区 -->
     <section class="chat">
       <div ref="chatBox" class="msgs">
-        <div class="m ai"><YxzAvatar :size="40" /><div class="bb">我是元小智。把信息卡勾好、写下要求，再连同校园平面图一起发给我，我来在图上画逃生路线。</div></div>
+        <div class="m ai"><YxzAvatar :size="40" /><div class="bb">{{ G.phase < 2 ? '我是元小智。把要告诉我的信息勾好，再连同校园平面图一起发给我，我来在图上画逃生路线。' : '想让路线图更好用？写下你的要求，比如给谁看、用什么颜色和标志，再发给我。' }}</div></div>
         <template v-for="(m, i) in G.chat" :key="i">
           <div v-if="m.role === 'user'" class="m me">
             <div class="bb">
@@ -245,6 +254,14 @@ const thumb = computed(() => (stage.value === 'work' ? campusThumb() : ''))
 .std b { margin-right: 8px; color: var(--ink); }
 h3 { font-size: 21px; margin-top: 4px; }
 h3 small { font-size: 16px; font-weight: 500; }
+.tk { display: inline-block; margin-right: 10px; padding: 2px 12px; border-radius: 10px; background: var(--accent); color: #fff; font-size: 18px; vertical-align: 2px; }
+.given { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.gl { width: 100%; font-size: 16px; color: var(--muted); }
+.gc { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 14px 0 10px; border-radius: 12px; background: #fff; font-size: 18px; font-weight: 700; color: var(--ink-2); box-shadow: var(--shadow); }
+.gc .box { width: 26px; height: 26px; border-radius: 7px; border: 3px solid #cfc6b8; display: inline-flex; align-items: center; justify-content: center; color: #fff; }
+.gc.on { color: var(--accent); }
+.gc.on .box { background: var(--accent); border-color: var(--accent); }
+.gc .box :deep(svg) { width: 18px; height: 18px; }
 .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .ic { padding: 4px; transition: box-shadow var(--t-light); }
 .ic.on { box-shadow: inset 0 0 0 3px var(--accent), var(--shadow); background: var(--accent-soft); }

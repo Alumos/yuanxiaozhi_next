@@ -108,6 +108,7 @@ type Module struct {
 	ws     map[int]*Group // seat -> workspace
 	plan   *PlanTrace
 	five   *Five
+	phase  int // 1 = 任务一：给元小智信息；2 = 任务二：优化路线图（教师在大屏切换）
 }
 
 func New(app *core.App, gw *llm.Gateway, rp *llm.Replay) (*Module, error) {
@@ -153,6 +154,7 @@ func New(app *core.App, gw *llm.Gateway, rp *llm.Replay) (*Module, error) {
 func (m *Module) reset() {
 	m.ws = map[int]*Group{}
 	m.plan, m.five = nil, nil
+	m.phase = 1
 }
 
 func (m *Module) Name() string { return "shuchu" }
@@ -160,7 +162,7 @@ func (m *Module) Name() string { return "shuchu" }
 func (m *Module) Snapshot() ([]byte, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	return json.Marshal(map[string]any{"seats": m.ws, "plan": m.plan, "five": m.five})
+	return json.Marshal(map[string]any{"seats": m.ws, "plan": m.plan, "five": m.five, "phase": m.phase})
 }
 
 func (m *Module) Restore(b []byte) error {
@@ -168,6 +170,7 @@ func (m *Module) Restore(b []byte) error {
 		Seats  map[int]*Group `json:"seats"`
 		Plan   *PlanTrace     `json:"plan"`
 		Five   *Five          `json:"five"`
+		Phase  int            `json:"phase"`
 	}
 	if err := json.Unmarshal(b, &v); err != nil {
 		return err
@@ -180,6 +183,9 @@ func (m *Module) Restore(b []byte) error {
 		m.ws[k] = g
 	}
 	m.plan, m.five = v.Plan, v.Five
+	if v.Phase == 2 {
+		m.phase = 2
+	}
 	if m.five != nil {
 		m.five.Running = false
 	}
@@ -312,7 +318,7 @@ func (m *Module) groupView(g *Group) map[string]any {
 	for _, v := range g.Versions {
 		vs = append(vs, map[string]any{"n": v.N, "kind": v.Kind, "seat": v.Seat, "spec": v.Spec, "image": v.Image, "plan": v.Plan, "input": v.Input})
 	}
-	return map[string]any{"group": g.N, "class": c, "cards": cards, "req": g.Input.Req, "versions": vs, "chat": g.Chat, "busy": g.Busy, "last_by": g.LastBy, "max_versions": maxVersions}
+	return map[string]any{"group": g.N, "class": c, "cards": cards, "req": g.Input.Req, "versions": vs, "chat": g.Chat, "busy": g.Busy, "last_by": g.LastBy, "max_versions": maxVersions, "phase": m.phase}
 }
 
 // pushGroup sends a tablet its own workspace (only that tablet) and the screen its class summary.
@@ -575,6 +581,9 @@ func (m *Module) ask(w http.ResponseWriter, r *http.Request, retry bool) {
 		return
 	}
 	in := g.Input
+	if m.phase < 2 { // 任务一只给信息，要求留到任务二
+		in.Req = ""
+	}
 	kind := "ask"
 	if retry {
 		if len(g.Versions) == 0 {
@@ -774,7 +783,7 @@ func (m *Module) screenState(w http.ResponseWriter, r *http.Request) {
 	for _, c := range m.classes {
 		gs = append(gs, m.groupSummary(c.Group))
 	}
-	out := map[string]any{"groups": gs, "plan": m.plan, "five": m.five, "tally": m.tally(), "mode": m.app.ModeName()}
+	out := map[string]any{"groups": gs, "plan": m.plan, "five": m.five, "tally": m.tally(), "mode": m.app.ModeName(), "phase": m.phase}
 	m.mu.Unlock()
 	core.JSON(w, out)
 }
@@ -784,6 +793,7 @@ func (m *Module) control(w http.ResponseWriter, r *http.Request) {
 		Action  string `json:"action"`
 		Group   int    `json:"group"`
 		Version int    `json:"version"`
+		Phase   int    `json:"phase"`
 		Seat    int    `json:"seat"` // 验收：哪台平板（编号位置会随新提交变化，以座位为准）
 	}
 	if core.Body(r, &in) != nil {
@@ -875,6 +885,15 @@ func (m *Module) control(w http.ResponseWriter, r *http.Request) {
 			m.hub.Publish("screen", "five_done", map[string]any{})
 			m.app.SaveNow("shuchu")
 		}()
+	case "phase":
+		if in.Phase != 1 && in.Phase != 2 {
+			core.Err(w, 400, "只有任务一和任务二", "bad_phase")
+			return
+		}
+		m.mu.Lock()
+		m.phase = in.Phase
+		m.mu.Unlock()
+		m.hub.Publish("all", "phase", map[string]any{"phase": in.Phase})
 	case "look":
 		m.hub.Publish("student:all", "look", map[string]any{"on": in.Group == 1})
 	case "reset":

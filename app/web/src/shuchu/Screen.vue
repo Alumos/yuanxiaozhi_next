@@ -16,7 +16,8 @@ import type { PlanTrace, RoadNode } from './types'
 
 type V = 'V0' | 'V1' | 'V2' | 'V3' | 'V4' | 'V5'
 const view = ref<V>('V0')
-const S = reactive<any>({ groups: [], plan: null, five: null, tally: { same: 0, diff: 0 }, mode: 'live' })
+const S = reactive<any>({ groups: [], plan: null, five: null, tally: { same: 0, diff: 0 }, mode: 'live', phase: 1 })
+async function setPhase(n: number) { await post('/api/shuchu/screen/control', { action: 'phase', phase: n }); S.phase = n }
 const nodes = ref<RoadNode[]>([])
 const edges = ref<any[]>([])
 const nodeName = (id: string) => nodes.value.find((n) => n.id === id)?.name || id
@@ -30,7 +31,7 @@ onMounted(async () => {
   off = events('shuchu', 'screen', {
     group_update: (d) => upd(d), gallery_update: (d) => upd(d),
     plan_trace: (d) => { if (view.value !== 'V2' || pm.step === 0) S.plan = d },
-    verdict: () => load(), vote_update: (d) => (S.tally = d), mode: (d) => (S.mode = d.mode), reset: load,
+    verdict: () => load(), phase: (d) => (S.phase = d.phase), vote_update: (d) => (S.tally = d), mode: (d) => (S.mode = d.mode), reset: load,
     five_item: (d) => addFive(d), five_done: () => (five.running = false),
   })
 })
@@ -247,8 +248,7 @@ function onKey(k: string) {
       <span class="sep" />
       <button @click="runPlan">开始计算</button>
       <button v-if="pm.paused" class="on" @click="cont">继续</button>
-      <button @click="ctl('look', { group: 1 })">平板：请看大屏</button>
-      <button @click="ctl('look', { group: 0 })">平板：继续操作</button>
+      <button class="task2" :class="{ on: S.phase === 2 }" @click="setPhase(S.phase === 2 ? 1 : 2)">{{ S.phase === 2 ? '平板：回到任务一' : '平板：进入任务二' }}</button>
       <button @click="ctl('vote_close')">关闭投票</button>
       <button class="warn" @click="resetAll">重置本环节</button>
     </template>

@@ -111,8 +111,6 @@ const short = (s: string) => (s || '').replace(/\n.*$/s, '').split('；').map((x
     </div>
 
     <template #controls>
-      <button @click="ctl('look')">平板：请看大屏</button>
-      <button @click="ctl('unlook')">平板：继续操作</button>
       <button class="warn" @click="resetAll">清空本环节</button>
     </template>
   </ScreenStage>

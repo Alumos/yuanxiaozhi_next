@@ -110,8 +110,6 @@ const latest = computed(() => shown.value.slice(-1)[0])
 
     <template #controls>
       <button :class="{ on: paused }" @click="paused = !paused">{{ paused ? '继续滚动' : '暂停滚动' }}</button>
-      <button @click="ctl('look')">平板：请看大屏</button>
-      <button @click="ctl('unlook')">平板：继续操作</button>
       <button class="warn" @click="resetAll">清空畅想</button>
     </template>
   </ScreenStage>
