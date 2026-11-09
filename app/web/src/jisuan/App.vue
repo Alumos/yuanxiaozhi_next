@@ -7,6 +7,8 @@ import BookCover from '../common/components/BookCover.vue'
 import LookAtScreen from '../common/components/LookAtScreen.vue'
 import RetryButton from '../common/components/RetryButton.vue'
 import Toasts from '../common/components/Toasts.vue'
+import StageLock from '../common/components/StageLock.vue'
+import { loadLock, onLock } from '../common/lock'
 import Analysis from './Analysis.vue'
 import { ApiError, events, get, post, streamResume, token } from '../common/api'
 import { ME, loadMe } from '../common/seat'
@@ -54,7 +56,9 @@ async function init() {
 }
 function subscribe() {
   off && off()
+  loadLock('jisuan')
   off = events('jisuan', 'student', {
+    lock: onLock,
     paused: (d) => (st.paused = d.paused),
     seat_moved: (d) => { if (d.keep !== token()) st.moved = true },
     reset: () => location.reload(),
@@ -193,6 +197,7 @@ const shownRes = computed<Result | null>(() => (showFirst.value && cur.value?.fi
 <template>
   <YxzHeader title="智能图书管理员" link="compute" :seat="ME.seat" :state="st.stage === 'analyzing' ? 'think' : 'idle'" />
   <Toasts />
+  <StageLock v-if="ME.seat" />
   <main class="pg">
     <SeatPicker v-if="st.stage === 'seat'" @done="onSeat" />
 

@@ -6,6 +6,8 @@ import YxzAvatar from '../common/components/YxzAvatar.vue'
 import SeatPicker from '../common/components/SeatPicker.vue'
 import LookAtScreen from '../common/components/LookAtScreen.vue'
 import Toasts from '../common/components/Toasts.vue'
+import StageLock from '../common/components/StageLock.vue'
+import { loadLock, onLock } from '../common/lock'
 import { events, get, post, token } from '../common/api'
 import { ME, loadMe } from '../common/seat'
 import { toast } from '../common/toast'
@@ -38,7 +40,9 @@ async function init() {
   try { Object.assign(form, JSON.parse(localStorage.getItem(KEY) || '{}')) } catch { /* */ }
   await loadMine()
   stage.value = 'work'
+  loadLock('changxiang')
   off = events('changxiang', 'student', {
+    lock: onLock,
     look: (d) => (look.value = d.on),
     reset: () => { try { localStorage.removeItem(KEY) } catch { /* */ } location.reload() },
     seats_cleared: () => location.reload(),
@@ -70,6 +74,7 @@ function again() { sent.value = null }
 <template>
   <YxzHeader title="畅想 · 元小智的新本领" link="imagine" :seat="ME.seat" :state="sending ? 'think' : 'idle'" />
   <Toasts />
+  <StageLock v-if="ME.seat" />
   <SeatPicker v-if="stage === 'seat'" @done="() => { stage = 'loading'; init() }" />
   <main v-else-if="stage === 'work'" class="cx">
     <!-- 提交成功 -->

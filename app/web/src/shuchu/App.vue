@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/* 输出环节 · 学生平板（小组共享）：左边任务区（班级卡 / 信息卡 / 要求），右边元小智对话区。 */
+/* 输出环节 · 学生平板（每台平板独立，负责本组的班）：左边任务区（班级卡 / 信息卡 / 要求），右边元小智对话区。 */
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import YxzHeader from '../common/components/YxzHeader.vue'
 import YxzAvatar from '../common/components/YxzAvatar.vue'
@@ -8,6 +8,8 @@ import ZoomViewer from '../common/components/ZoomViewer.vue'
 import RetryButton from '../common/components/RetryButton.vue'
 import LookAtScreen from '../common/components/LookAtScreen.vue'
 import Toasts from '../common/components/Toasts.vue'
+import StageLock from '../common/components/StageLock.vue'
+import { loadLock, onLock } from '../common/lock'
 import Stamp from '../common/components/Stamp.vue'
 import { ApiError, events, get, post, stream, token } from '../common/api'
 import { ME, loadMe } from '../common/seat'
@@ -50,11 +52,10 @@ async function init() {
   nodes.value = g.nodes; chips.value = g.chips
   await load()
   stage.value = 'work'
+  loadLock('shuchu')
   off = events('shuchu', 'student', {
-    group_update: (d) => {
-      if (d.by && d.by !== ME.seat && d.what) toast(`${d.by} 号平板${d.what}`)
-      applyGroup(d)
-    },
+    lock: onLock,
+    group_update: (d) => { if (d.seat === ME.seat) applyGroup(d) },
     vote: (d) => { vote.open = d.open; vote.cls = d.class || ''; if (d.open) vote.mine = '' },
     verdict: (d) => (verdicts[d.version] = d.verdict),
     look: (d) => (look.value = d.on),
@@ -98,7 +99,7 @@ async function ask(retry = false) {
         scrollChat()
         // 先在底图上“改”给学生看，再栅格化成 JPEG 发回对话
         const [jpg] = await Promise.all([routeJpeg(d.spec, nodes.value).catch(() => ''), new Promise((r) => setTimeout(r, 2600))])
-        if (jpg) { try { await post('/api/shuchu/group/image', { version: d.version, data: jpg }) } catch { /* 同组别的平板也会传 */ } }
+        if (jpg) { try { await post('/api/shuchu/group/image', { version: d.version, data: jpg }) } catch { /* 上传失败：大屏会用说明书现画 */ } }
         live.value = null
         await load()
       }
@@ -135,7 +136,8 @@ const thumb = computed(() => (stage.value === 'work' ? campusThumb() : ''))
     <span v-if="G.group">第 {{ G.group }} 组 · {{ ME.seat }} 号平板</span>
   </YxzHeader>
   <Toasts />
-  <SeatPicker v-if="stage === 'seat'" @done="onSeat" hint="同组的平板会一起看到同一份任务" />
+  <StageLock v-if="ME.seat" />
+  <SeatPicker v-if="stage === 'seat'" @done="onSeat" />
   <main v-else-if="stage === 'work'" class="wk">
     <!-- 任务区 -->
     <section class="task">
@@ -168,7 +170,6 @@ const thumb = computed(() => (stage.value === 'work' ? campusThumb() : ''))
         <template v-for="(m, i) in G.chat" :key="i">
           <div v-if="m.role === 'user'" class="m me">
             <div class="bb">
-              <small class="who">{{ m.seat }} 号平板</small>
               <img v-if="m.thumb" :src="thumb" class="thumb" alt="校园平面图" />
               <span>{{ m.text }}</span>
             </div>
@@ -203,7 +204,6 @@ const thumb = computed(() => (stage.value === 'work' ? campusThumb() : ''))
         <div v-for="v in G.versions" :key="v.n" class="sv" @click="zoomVersion(v, $event)"><img v-if="v.image" :src="v.image" /><b>第 {{ v.n }} 版</b></div>
       </div>
       <footer class="send">
-        <p v-if="G.busy && G.busy !== ME.seat" class="busy">{{ G.busy }} 号平板正在请元小智画图……</p>
         <div class="row">
           <RetryButton v-if="lastIsMine" :left="left" :busy="sending || !!G.busy" confirm-text="用完全相同的要求再画一次，看看会不会不一样？" @go="ask(true)" />
           <span class="sp" />

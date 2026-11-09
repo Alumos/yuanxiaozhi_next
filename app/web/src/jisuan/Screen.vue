@@ -129,7 +129,7 @@ watch(view, (v) => { if (v === 'V0') requestAnimationFrame(() => {}) })
 </script>
 
 <template>
-  <ScreenStage :mode="S.mode" @key="onKey">
+  <ScreenStage :mode="S.mode" lock="jisuan" @key="onKey">
     <Toasts />
     <YxzHeader title="元小智 · 计算" link="compute" big :state="Object.values(analyzing).some(Boolean) ? 'think' : 'idle'">
       <span v-if="view === 'V2'">{{ v2.seat }} 号平板的分析过程</span>

@@ -63,6 +63,7 @@ type App struct {
 	Started  time.Time
 	Logger   *log.Logger
 	OnConfig func(Config)
+	lk       locks
 }
 
 func NewApp(content, data, pin, mode string) (*App, error) {
@@ -71,6 +72,7 @@ func NewApp(content, data, pin, mode string) (*App, error) {
 		mode = "live"
 	}
 	a.Mode.Store(mode)
+	defer a.initLocks()
 	for _, d := range []string{"state", "logs", "replay", "uploads"} {
 		os.MkdirAll(filepath.Join(data, d), 0o755)
 	}
@@ -321,6 +323,7 @@ func LanIPs() []string {
 // ---------------- common routes ----------------
 
 func (a *App) CommonRoutes(mux *http.ServeMux, llmStatus func() any) {
+	a.lockRoutes(mux)
 	mux.HandleFunc("GET /api/common/health", func(w http.ResponseWriter, r *http.Request) { JSON(w, map[string]any{"ok": true}) })
 	mux.HandleFunc("GET /api/common/lan", func(w http.ResponseWriter, r *http.Request) {
 		ip := a.Cfg().LanIP
@@ -456,7 +459,8 @@ func (a *App) CommonRoutes(mux *http.ServeMux, llmStatus func() any) {
 			up := filepath.Join(a.Data, "uploads")
 			os.RemoveAll(up)
 			os.MkdirAll(filepath.Join(up, "shuchu"), 0o755)
-			a.Logger.Printf("new_class: 已清空课堂数据")
+			a.SetLock("", true)
+			a.Logger.Printf("new_class: 已清空课堂数据，四个环节重新上锁")
 		case "reset":
 			for _, m := range a.modules {
 				if in.Module == "" || in.Module == m.Name() {

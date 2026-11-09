@@ -5,7 +5,10 @@ import { get, post } from '../common/api'
 import YxzHeader from '../common/components/YxzHeader.vue'
 const d = ref<any>(null)
 let t = 0
-async function load() { d.value = await get('/api/common/admin') }
+const locks = ref<Record<string, boolean>>({})
+async function load() { d.value = await get('/api/common/admin'); locks.value = await get('/api/common/locks') }
+const STAGES = [['shuru', '输入'], ['jisuan', '计算'], ['shuchu', '输出'], ['changxiang', '畅想']]
+async function setLock(mod: string, on: boolean) { locks.value = await post('/api/common/lock', { mod, locked: on }) }
 onMounted(() => { load(); t = window.setInterval(load, 3000) })
 onBeforeUnmount(() => clearInterval(t))
 async function act(body: any, ask?: string) { if (ask && !confirm(ask)) return; await post('/api/common/admin', body); load() }
@@ -44,6 +47,14 @@ async function newClass() {
         <tr v-for="(s, k) in d.llm.gateway.scenes" :key="k"><td>{{ k }}</td><td>{{ s.calls }}</td><td>{{ (s.avg_ms / 1000).toFixed(1) }} 秒</td><td>{{ pct(s.cache_hit) }}</td><td>{{ s.fallbacks }}</td><td>{{ s.errors }}</td></tr>
       </table>
       <p class="muted">回放录音：{{ JSON.stringify(d.llm.replay) }}</p>
+    </section>
+    <section class="card">
+      <h2>环节锁</h2>
+      <div class="seg">
+        <button v-for="m in STAGES" :key="m[0]" :class="{ on: !locks[m[0]] }" @click="setLock(m[0], !locks[m[0]])">{{ m[1] }}：{{ locks[m[0]] ? '已锁' : '已开放' }}</button>
+        <button @click="setLock('', true)">全部锁住</button>
+      </div>
+      <p class="muted">每个环节默认锁住，学生能打开页面、选座位，但不能操作。讲到哪个环节，就在那个环节大屏右上角点“开放”（这里也可以）。换下一个班会自动全部重新锁住。</p>
     </section>
     <section class="card nc">
       <h2>换下一个班</h2>

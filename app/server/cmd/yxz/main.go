@@ -135,7 +135,7 @@ func main() {
 	go app.SnapshotLoop()
 	go js.Warmup()
 	port := env("YXZ_PORT", "8080")
-	srv := &http.Server{Addr: ":" + port, Handler: mux, ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 120 * time.Second}
+	srv := &http.Server{Addr: ":" + port, Handler: app.LockGuard(mux), ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 120 * time.Second}
 	fmt.Printf("元小智课堂系统已启动：http://localhost:%s  局域网：%v  模式：%s\n", port, core.LanIPs(), app.ModeName())
 	if err := srv.ListenAndServe(); err != nil {
 		fmt.Fprintln(os.Stderr, err)

@@ -99,7 +99,7 @@ const selV = computed(() => selG.value?.versions[(sel.version || selG.value.vers
 const selSvg = computed(() => (selV.value?.spec ? routeSvg(selV.value.spec, nodes.value, { issues: selV.value.issues?.filter((i: any) => !i.warn) }) : ''))
 function openCheck(g: number, v = 0) { sel.group = g; sel.version = v; view.value = 'V4' }
 async function verdict(ok: boolean) {
-  await ctl(ok ? 'approve' : 'reject', { group: sel.group, version: selV.value.n })
+  await ctl(ok ? 'approve' : 'reject', { group: sel.group, version: selV.value.n, seat: selV.value.seat })
   await load()
 }
 
@@ -141,7 +141,7 @@ function onKey(k: string) {
 </script>
 
 <template>
-  <ScreenStage :mode="S.mode" @key="onKey">
+  <ScreenStage :mode="S.mode" lock="shuchu" @key="onKey">
     <Toasts />
     <YxzHeader title="元小智 · 输出" link="output" big :state="pm.playing || five.running ? 'think' : 'idle'">疏散路线图发布会</YxzHeader>
 
@@ -162,9 +162,9 @@ function onKey(k: string) {
     <section v-if="view === 'V1'" class="v1">
       <div v-for="g in S.groups" :key="g.group" class="gc card" :class="{ busy: g.busy }">
         <h2>第 {{ g.group }} 组 · {{ g.class }}班</h2>
-        <div class="cs"><span v-for="(on, i) in g.cards" :key="i" class="cp" :class="{ on }">{{ '①②③④⑤⑥'[i] }} {{ CARDS[i] }}</span></div>
-        <p>要求：<b class="num">{{ g.req_len }}</b> 字</p>
-        <p class="st">{{ g.busy ? '正在请元小智画图……' : g.versions.length ? `已拿到 ${g.versions.length} 版` : '还没提交' }}</p>
+        <div class="cs"><span v-for="(n, i) in g.counts" :key="i" class="cp" :class="{ on: n > 0 }">{{ '①②③④⑤⑥'[i] }} {{ CARDS[i] }}<em v-if="n" class="num"> {{ n }}</em></span></div>
+        <div class="tabs"><span v-for="t in g.tablets" :key="t.seat" class="tb" :class="{ got: t.versions, busy: t.busy }">{{ t.seat }}</span></div>
+        <p class="st">{{ g.busy ? `${g.busy} 台正在请元小智画图……` : g.versions.length ? `${g.versions.length} 台已拿到路线图` : g.tablets.length ? `${g.tablets.length} 台在填写` : '还没开始' }}</p>
       </div>
     </section>
 
@@ -183,7 +183,7 @@ function onKey(k: string) {
 
     <section v-if="view === 'V3'" class="v3">
       <div v-for="g in S.groups" :key="g.group" class="wt card" @click="g.versions.length && openCheck(g.group, wallVer[g.group] || 0)">
-        <h3>{{ g.class }}班 <small v-if="g.versions.length > 1"><button v-for="v in g.versions" :key="v.n" :class="{ on: verOf(g)?.n === v.n }" @click.stop="wallVer[g.group] = v.n">{{ v.n }}</button></small></h3>
+        <h3>{{ g.class }}班 <small v-if="g.versions.length > 1"><button v-for="v in g.versions" :key="v.n" :class="{ on: verOf(g)?.n === v.n }" @click.stop="wallVer[g.group] = v.n">{{ v.seat }}号</button></small></h3>
         <div class="im">
           <img v-if="verOf(g)?.image" :src="verOf(g).image" />
           <p v-else class="muted">{{ g.busy ? '正在画……' : '等待中' }}</p>
@@ -202,7 +202,8 @@ function onKey(k: string) {
       <aside>
         <div class="gs"><button v-for="g in S.groups" :key="g.group" :class="{ on: sel.group === g.group }" @click="sel.group = g.group; sel.version = 0">{{ g.class }}</button></div>
         <div v-if="selV" class="chk">
-          <h3>系统核验</h3>
+          <div v-if="selG && selG.versions.length > 1" class="gs"><button v-for="v in selG.versions" :key="v.n" :class="{ on: selV.n === v.n }" @click="sel.version = v.n">{{ v.seat }}号</button></div>
+          <h3>{{ selV.seat }} 号平板 · 系统核验</h3>
           <p v-for="(i, k) in selV.issues" :key="k" :class="{ warn: i.warn }">{{ i.warn ? '提醒' : '不对' }}：{{ i.label }}</p>
           <p v-if="!selV.issues?.length" class="ok">路线沿道路、楼梯正确、终点是集合点</p>
           <div class="vb"><button class="btn big" @click="verdict(true)">通过</button><button class="btn big ghost" @click="verdict(false)">不通过</button></div>
@@ -267,6 +268,11 @@ section { position: absolute; left: 0; right: 0; top: 104px; bottom: 0; padding:
 .a p { background: #fff; padding: 20px 28px; border-radius: 4px 24px 24px 24px; box-shadow: var(--shadow); }
 .v1 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; align-content: start; }
 .gc { padding: 26px; display: flex; flex-direction: column; gap: 14px; }
+.cp em { font-style: normal; font-weight: 800; }
+.tabs { display: flex; gap: 6px; margin: 8px 0 2px; }
+.tb { min-width: 34px; height: 30px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700; background: #eee9df; color: var(--muted); }
+.tb.got { background: var(--output); color: #fff; }
+.tb.busy { box-shadow: 0 0 0 3px var(--amber); }
 .gc.busy { box-shadow: 0 0 0 5px var(--accent); }
 .gc h2 { font-size: 38px; }
 .cs { display: flex; flex-wrap: wrap; gap: 8px; }

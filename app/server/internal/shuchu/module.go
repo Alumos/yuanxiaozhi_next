@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -61,8 +62,10 @@ type ChatMsg struct {
 	Pending bool   `json:"pending,omitempty"`
 }
 
+// Group is one tablet's workspace (每台平板独立). N is the tablet's group = the class it plans for.
 type Group struct {
 	N        int       `json:"n"`
+	Seat     int       `json:"seat"`
 	Input    Input     `json:"input"`
 	Versions []*Version `json:"versions"`
 	Chat     []ChatMsg `json:"chat"`
@@ -102,7 +105,7 @@ type Module struct {
 	up      string
 
 	mu     sync.RWMutex
-	groups map[int]*Group
+	ws     map[int]*Group // seat -> workspace
 	plan   *PlanTrace
 	five   *Five
 }
@@ -113,7 +116,7 @@ func New(app *core.App, gw *llm.Gateway, rp *llm.Replay) (*Module, error) {
 	if err != nil {
 		return nil, err
 	}
-	m := &Module{app: app, gw: gw, rp: rp, hub: app.Hub("shuchu"), G: g, groups: map[int]*Group{}}
+	m := &Module{app: app, gw: gw, rp: rp, hub: app.Hub("shuchu"), G: g, ws: map[int]*Group{}}
 	if err := loadJSON(filepath.Join(dir, "campus", "classes.json"), &m.classes); err != nil {
 		return nil, err
 	}
@@ -148,10 +151,7 @@ func New(app *core.App, gw *llm.Gateway, rp *llm.Replay) (*Module, error) {
 }
 
 func (m *Module) reset() {
-	m.groups = map[int]*Group{}
-	for _, c := range m.classes {
-		m.groups[c.Group] = &Group{N: c.Group}
-	}
+	m.ws = map[int]*Group{}
 	m.plan, m.five = nil, nil
 }
 
@@ -160,24 +160,24 @@ func (m *Module) Name() string { return "shuchu" }
 func (m *Module) Snapshot() ([]byte, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	return json.Marshal(map[string]any{"groups": m.groups, "plan": m.plan, "five": m.five})
+	return json.Marshal(map[string]any{"seats": m.ws, "plan": m.plan, "five": m.five})
 }
 
 func (m *Module) Restore(b []byte) error {
 	var v struct {
-		Groups map[int]*Group `json:"groups"`
+		Seats  map[int]*Group `json:"seats"`
 		Plan   *PlanTrace     `json:"plan"`
 		Five   *Five          `json:"five"`
 	}
 	if err := json.Unmarshal(b, &v); err != nil {
 		return err
 	}
-	for k, g := range v.Groups {
+	for k, g := range v.Seats {
 		g.Busy = 0
 		for i := range g.Chat {
 			g.Chat[i].Pending = false
 		}
-		m.groups[k] = g
+		m.ws[k] = g
 	}
 	m.plan, m.five = v.Plan, v.Five
 	if m.five != nil {
@@ -259,16 +259,32 @@ func (m *Module) infoOf(in Input) Cands {
 	return Cands{Stairs: in.Cards[1], Roads: in.Cards[2], Crowd: in.Cards[3], Goal: in.Cards[4]}
 }
 
-// runPlan plans the whole class with everyone's current (or last submitted) cards.
-func (m *Module) runPlanLocked() *PlanTrace {
+// latest returns the most recent version submitted by any tablet of group n.
+func (m *Module) latest(n int) *Version {
+	var best *Version
+	for _, g := range m.ws {
+		if g.N != n || len(g.Versions) == 0 {
+			continue
+		}
+		if v := g.Versions[len(g.Versions)-1]; best == nil || v.At.After(best.At) {
+			best = v
+		}
+	}
+	return best
+}
+
+// runPlanLocked plans the whole school: each class uses the latest map one of its tablets asked for.
+// With self != nil, that tablet's class uses in (the request being made right now).
+func (m *Module) runPlanLocked(self *Group, in Input) *PlanTrace {
 	info := map[int]Cands{}
 	known := map[int]bool{}
-	for n, g := range m.groups {
-		in := g.Input
-		if len(g.Versions) > 0 {
-			in = g.Versions[len(g.Versions)-1].Input
+	for _, c := range m.classes {
+		if v := m.latest(c.Group); v != nil {
+			info[c.Group], known[c.Group] = m.infoOf(v.Input), v.Input.Cards[0]
 		}
-		info[n], known[n] = m.infoOf(in), in.Cards[0]
+	}
+	if self != nil {
+		info[self.N], known[self.N] = m.infoOf(in), in.Cards[0]
 	}
 	m.plan = m.G.Plan(m.classes, info, known, m.th)
 	return m.plan
@@ -299,21 +315,64 @@ func (m *Module) groupView(g *Group) map[string]any {
 	return map[string]any{"group": g.N, "class": c, "cards": cards, "req": g.Input.Req, "versions": vs, "chat": g.Chat, "busy": g.Busy, "last_by": g.LastBy, "max_versions": maxVersions}
 }
 
+// pushGroup sends a tablet its own workspace (only that tablet) and the screen its class summary.
 func (m *Module) pushGroup(g *Group, by int, what string) {
 	v := m.groupView(g)
-	v["by"], v["what"] = by, what
-	m.hub.Publish("group:"+strconv.Itoa(g.N), "group_update", v)
-	m.hub.Publish("screen", "group_update", m.groupSummary(g))
+	v["seat"] = g.Seat
+	m.hub.Publish("student:"+strconv.Itoa(g.Seat), "group_update", v)
+	m.hub.Publish("screen", "group_update", m.groupSummary(g.N))
 	m.app.MarkDirty("shuchu")
 }
 
-func (m *Module) groupSummary(g *Group) map[string]any {
-	c := m.class(g.N)
-	vs := []map[string]any{}
-	for _, v := range g.Versions {
-		vs = append(vs, map[string]any{"n": v.N, "kind": v.Kind, "image": v.Image, "spec": v.Spec, "issues": v.Issues, "verdict": v.Verdict, "fallback": v.Fallback, "stair": stairOf(m.G, v.Spec)})
+// tablets of group n, by seat number.
+func (m *Module) tablets(n int) []*Group {
+	var out []*Group
+	for _, g := range m.ws {
+		if g.N == n {
+			out = append(out, g)
+		}
 	}
-	return map[string]any{"group": g.N, "class": c.Class, "cards": g.Input.Cards, "req": g.Input.Req, "req_len": len([]rune(g.Input.Req)), "versions": vs, "busy": g.Busy}
+	sort.Slice(out, func(i, j int) bool { return out[i].Seat < out[j].Seat })
+	return out
+}
+
+// wall lists, for the screen, the newest map of each tablet in group n (index+1 is the screen's version number).
+func (m *Module) wall(n int) []*Group {
+	var out []*Group
+	for _, g := range m.tablets(n) {
+		if len(g.Versions) > 0 {
+			out = append(out, g)
+		}
+	}
+	return out
+}
+
+// groupSummary is one class card on the big screen, built from all tablets of that group.
+func (m *Module) groupSummary(n int) map[string]any {
+	c := m.class(n)
+	vs := []map[string]any{}
+	for i, g := range m.wall(n) {
+		v := g.Versions[len(g.Versions)-1]
+		vs = append(vs, map[string]any{"n": i + 1, "seat": g.Seat, "sn": v.N, "kind": v.Kind, "image": v.Image, "spec": v.Spec, "issues": v.Issues, "verdict": v.Verdict, "fallback": v.Fallback, "stair": stairOf(m.G, v.Spec)})
+	}
+	var counts [6]int
+	tabs := []map[string]any{}
+	busy, reqLen := 0, 0
+	for _, g := range m.tablets(n) {
+		for i, on := range g.Input.Cards {
+			if on {
+				counts[i]++
+			}
+		}
+		if g.Busy != 0 {
+			busy++
+		}
+		if l := len([]rune(g.Input.Req)); l > reqLen {
+			reqLen = l
+		}
+		tabs = append(tabs, map[string]any{"seat": g.Seat, "cards": g.Input.Cards, "versions": len(g.Versions), "busy": g.Busy != 0})
+	}
+	return map[string]any{"group": n, "class": c.Class, "counts": counts, "tablets": tabs, "req_len": reqLen, "versions": vs, "busy": busy}
 }
 
 func stairOf(g *Graph, sp *Spec) string {
@@ -334,10 +393,15 @@ func (m *Module) mine(w http.ResponseWriter, r *http.Request) (int, *Group) {
 		core.Err(w, 401, "先选一下座位号吧", "no_seat")
 		return 0, nil
 	}
-	g := m.groups[m.app.GroupOf(seat)]
+	g := m.ws[seat]
 	if g == nil {
-		core.Err(w, 404, "没有找到你的小组", "no_group")
-		return 0, nil
+		n := m.app.GroupOf(seat)
+		if m.class(n).Group == 0 {
+			core.Err(w, 404, "没有找到你的小组", "no_group")
+			return 0, nil
+		}
+		g = &Group{N: n, Seat: seat}
+		m.ws[seat] = g
 	}
 	return seat, g
 }
@@ -349,8 +413,8 @@ func (m *Module) Routes(mux *http.ServeMux) {
 		core.JSON(w, map[string]any{"nodes": m.G.Nodes, "edges": m.G.Edges, "assembly": m.G.Assembly, "classes": m.classes, "chips": json.RawMessage(m.chips), "thresholds": m.th})
 	})
 	mux.HandleFunc("GET /api/shuchu/group", func(w http.ResponseWriter, r *http.Request) {
-		m.mu.RLock()
-		defer m.mu.RUnlock()
+		m.mu.Lock()
+		defer m.mu.Unlock()
 		seat, g := m.mine(w, r)
 		if g == nil {
 			return
@@ -395,8 +459,9 @@ func (m *Module) Routes(mux *http.ServeMux) {
 			g.Input.Req = clip(*in.Req, 120)
 			what = "改了对路线图的要求"
 		}
+		_ = what
 		g.LastBy = seat
-		m.pushGroup(g, seat, what)
+		m.pushGroup(g, seat, "")
 		m.mu.Unlock()
 		core.JSON(w, map[string]any{"ok": true})
 	})
@@ -501,7 +566,7 @@ func (m *Module) ask(w http.ResponseWriter, r *http.Request, retry bool) {
 	}
 	if g.Busy != 0 {
 		m.mu.Unlock()
-		core.Err(w, 409, fmt.Sprintf("%d 号平板正在请元小智画图……", g.Busy), "busy")
+		core.Err(w, 409, "元小智正在画上一张图，稍等一下", "busy")
 		return
 	}
 	if len(g.Versions) >= maxVersions {
@@ -539,7 +604,7 @@ func (m *Module) ask(w http.ResponseWriter, r *http.Request, retry bool) {
 		}
 		reply := "我还不知道你们班在哪栋楼、几楼、有多少人，没法算路线呀。能告诉我：" + strings.Join(miss[:min(3, len(miss))], "、") + "吗？"
 		g.Chat = append(g.Chat, ChatMsg{Role: "ai", Text: reply})
-		m.pushGroup(g, seat, "向元小智提问")
+		m.pushGroup(g, seat, "")
 		m.mu.Unlock()
 		st.Send("reply", map[string]string{"text": reply})
 		st.Send("done", map[string]any{})
@@ -547,9 +612,9 @@ func (m *Module) ask(w http.ResponseWriter, r *http.Request, retry bool) {
 	}
 	g.Busy = seat
 	g.Chat = append(g.Chat, ChatMsg{Role: "ai", Text: "收到！我先算一算路线……", Pending: true})
-	tr := m.runPlanLocked()
+	tr := m.runPlanLocked(g, in)
 	gp := m.groupPlan(tr, g.N)
-	m.pushGroup(g, seat, map[bool]string{true: "点了再试一次", false: "请元小智画图"}[retry])
+	m.pushGroup(g, seat, "")
 	m.mu.Unlock()
 	m.hub.Publish("screen", "plan_trace", tr)
 	st.Send("plan", map[string]any{"plan": gp, "trace_ops": tr.Ops})
@@ -572,7 +637,7 @@ func (m *Module) ask(w http.ResponseWriter, r *http.Request, retry bool) {
 		label += " · 再试"
 	}
 	g.Chat = append(g.Chat, ChatMsg{Role: "ai", Text: label + "。" + sp.Explain, Version: v.N})
-	m.pushGroup(g, seat, "收到了第 "+strconv.Itoa(v.N)+" 版路线图")
+	m.pushGroup(g, seat, "")
 	m.mu.Unlock()
 	m.app.SaveNow("shuchu")
 	st.Send("spec", map[string]any{"version": v.N, "spec": sp, "ms": ms})
@@ -678,14 +743,14 @@ func (m *Module) image(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v := g.Versions[in.Version-1]
-	if v.Image != "" { // 同组其他平板也会上传：保留第一张
+	if v.Image != "" { // 已经传过（重试上传）：保留第一张
 		m.mu.Unlock()
 		core.JSON(w, map[string]any{"image": v.Image})
 		return
 	}
 	rb := make([]byte, 4)
 	rand.Read(rb)
-	name := fmt.Sprintf("g%d-v%d-%s.jpg", g.N, v.N, hex.EncodeToString(rb))
+	name := fmt.Sprintf("g%d-s%d-v%d-%s.jpg", g.N, g.Seat, v.N, hex.EncodeToString(rb))
 	if err := os.WriteFile(filepath.Join(m.up, name), b, 0o644); err != nil {
 		m.mu.Unlock()
 		core.Err(w, 500, "保存失败", "io")
@@ -693,7 +758,7 @@ func (m *Module) image(w http.ResponseWriter, r *http.Request) {
 	}
 	v.Image = "/uploads/shuchu/" + name
 	m.pushGroup(g, seat, "")
-	m.hub.Publish("screen", "gallery_update", m.groupSummary(g))
+	m.hub.Publish("screen", "gallery_update", m.groupSummary(g.N))
 	m.mu.Unlock()
 	core.JSON(w, map[string]any{"image": v.Image})
 }
@@ -703,11 +768,11 @@ func (m *Module) image(w http.ResponseWriter, r *http.Request) {
 func (m *Module) screenState(w http.ResponseWriter, r *http.Request) {
 	m.mu.Lock()
 	if m.plan == nil {
-		m.runPlanLocked()
+		m.runPlanLocked(nil, Input{})
 	}
 	gs := []map[string]any{}
 	for _, c := range m.classes {
-		gs = append(gs, m.groupSummary(m.groups[c.Group]))
+		gs = append(gs, m.groupSummary(c.Group))
 	}
 	out := map[string]any{"groups": gs, "plan": m.plan, "five": m.five, "tally": m.tally(), "mode": m.app.ModeName()}
 	m.mu.Unlock()
@@ -719,6 +784,7 @@ func (m *Module) control(w http.ResponseWriter, r *http.Request) {
 		Action  string `json:"action"`
 		Group   int    `json:"group"`
 		Version int    `json:"version"`
+		Seat    int    `json:"seat"` // 验收：哪台平板（编号位置会随新提交变化，以座位为准）
 	}
 	if core.Body(r, &in) != nil {
 		core.Err(w, 400, "格式不对", "bad_body")
@@ -727,22 +793,31 @@ func (m *Module) control(w http.ResponseWriter, r *http.Request) {
 	switch in.Action {
 	case "run_plan":
 		m.mu.Lock()
-		tr := m.runPlanLocked()
+		tr := m.runPlanLocked(nil, Input{})
 		m.mu.Unlock()
 		m.hub.Publish("screen", "plan_trace", tr)
 		core.JSON(w, tr)
 		return
 	case "approve", "reject":
 		m.mu.Lock()
-		g := m.groups[in.Group]
-		if g == nil || in.Version < 1 || in.Version > len(g.Versions) {
+		wl := m.wall(in.Group) // the screen's version number = position on the wall
+		if in.Version < 1 || in.Version > len(wl) {
 			m.mu.Unlock()
 			core.Err(w, 404, "没有这一版", "no_version")
 			return
 		}
-		g.Versions[in.Version-1].Verdict = map[string]string{"approve": "pass", "reject": "fail"}[in.Action]
-		m.hub.Publish("screen", "verdict", map[string]any{"group": g.N, "version": in.Version, "verdict": g.Versions[in.Version-1].Verdict})
-		m.hub.Publish("group:"+strconv.Itoa(g.N), "verdict", map[string]any{"version": in.Version, "verdict": g.Versions[in.Version-1].Verdict})
+		g := wl[in.Version-1]
+		if in.Seat > 0 {
+			for k, x := range wl {
+				if x.Seat == in.Seat {
+					g, in.Version = x, k+1
+				}
+			}
+		}
+		v := g.Versions[len(g.Versions)-1]
+		v.Verdict = map[string]string{"approve": "pass", "reject": "fail"}[in.Action]
+		m.hub.Publish("screen", "verdict", map[string]any{"group": g.N, "version": in.Version, "verdict": v.Verdict})
+		m.hub.Publish("student:"+strconv.Itoa(g.Seat), "verdict", map[string]any{"version": v.N, "verdict": v.Verdict})
 		m.mu.Unlock()
 	case "vote_open", "vote_close":
 		m.mu.Lock()
@@ -758,8 +833,8 @@ func (m *Module) control(w http.ResponseWriter, r *http.Request) {
 		_ = f
 	case "five_start":
 		m.mu.Lock()
-		g := m.groups[in.Group]
-		if g == nil || len(g.Versions) == 0 {
+		lv := m.latest(in.Group)
+		if lv == nil {
 			m.mu.Unlock()
 			core.Err(w, 409, "这一组还没有路线图", "none")
 			return
@@ -773,10 +848,10 @@ func (m *Module) control(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		m.five.Open, m.five.Running, m.five.Items = false, true, nil
-		in0 := g.Versions[len(g.Versions)-1].Input
-		tr := m.runPlanLocked()
-		gp := m.groupPlan(tr, g.N)
-		c := m.class(g.N)
+		in0 := lv.Input
+		tr := m.runPlanLocked(nil, Input{})
+		gp := m.groupPlan(tr, in.Group)
+		c := m.class(in.Group)
 		m.mu.Unlock()
 		m.hub.Publish("student:all", "vote", map[string]any{"open": false})
 		var wg sync.WaitGroup
@@ -814,8 +889,8 @@ func (m *Module) Status() map[string]any {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	n := 0
-	for _, g := range m.groups {
+	for _, g := range m.ws {
 		n += len(g.Versions)
 	}
-	return map[string]any{"versions": n}
+	return map[string]any{"versions": n, "tablets": len(m.ws)}
 }

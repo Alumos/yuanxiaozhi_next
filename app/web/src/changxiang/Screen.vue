@@ -58,7 +58,7 @@ const latest = computed(() => shown.value.slice(-1)[0])
 </script>
 
 <template>
-  <ScreenStage :mode="S.mode" @key="onKey">
+  <ScreenStage :mode="S.mode" lock="changxiang" @key="onKey">
     <Toasts />
     <YxzHeader title="元小智 · 畅想" link="imagine" big>新本领征集</YxzHeader>
     <section class="wall" :class="{ paused: paused || !!open }">

@@ -58,7 +58,7 @@ const short = (s: string) => (s || '').replace(/\n.*$/s, '').split('；').map((x
 </script>
 
 <template>
-  <ScreenStage :mode="S.mode" @key="onKey">
+  <ScreenStage :mode="S.mode" lock="shuru" @key="onKey">
     <Toasts />
     <YxzHeader title="元小智 · 输入" link="input" big>秋假攻略</YxzHeader>
     <section class="wall">

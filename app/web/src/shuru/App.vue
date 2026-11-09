@@ -8,6 +8,8 @@ import SeatPicker from '../common/components/SeatPicker.vue'
 import LookAtScreen from '../common/components/LookAtScreen.vue'
 import RetryButton from '../common/components/RetryButton.vue'
 import Toasts from '../common/components/Toasts.vue'
+import StageLock from '../common/components/StageLock.vue'
+import { loadLock, onLock } from '../common/lock'
 import { events, get, stream, token } from '../common/api'
 import { ME, loadMe } from '../common/seat'
 import { toast } from '../common/toast'
@@ -44,7 +46,9 @@ async function init() {
   guides.value = st.guides || []; max.value = st.max
   view.value = Math.max(0, guides.value.length - 1)
   stage.value = 'work'
+  loadLock('shuru')
   off = events('shuru', 'student', {
+    lock: onLock,
     look: (d) => (look.value = d.on),
     reset: () => { try { localStorage.removeItem(KEY) } catch { /* */ } location.reload() },
     seats_cleared: () => location.reload(),
@@ -113,6 +117,7 @@ const KIND: Record<string, string> = { ask: '', retry: ' · 再试', focus: ' ·
 <template>
   <YxzHeader title="秋假攻略" link="input" :seat="ME.seat" :state="busy ? 'think' : 'listen'" />
   <Toasts />
+  <StageLock v-if="ME.seat" />
   <SeatPicker v-if="stage === 'seat'" @done="() => { stage = 'loading'; init() }" />
   <main v-else-if="stage === 'work'" class="sr">
     <!-- 输入区 -->
